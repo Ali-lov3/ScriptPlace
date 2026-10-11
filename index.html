@@ -131,12 +131,6 @@ a.sc:hover{border-color:var(--line2);transform:translateY(-2px)}
 .badge.x{background:var(--s3);border-color:var(--line2);color:var(--text)}
 .owner{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--pink);color:#fff;vertical-align:middle;line-height:1.6}
 
-.ulink{cursor:pointer}
-.ulink:hover{color:var(--pink);text-decoration:underline}
-.uav{display:inline-flex;flex:0 0 auto}
-.uav[data-u]{cursor:pointer}
-.uav[data-u]:hover .av{filter:brightness(.85)}
-
 .sk{border-radius:var(--rl);height:290px;background:linear-gradient(100deg,var(--s1) 30%,var(--s2) 50%,var(--s1) 70%);background-size:300% 100%;animation:sh 1.4s infinite;border:1px solid var(--line)}
 @keyframes sh{to{background-position:-300% 0}}
 @media(prefers-reduced-motion:reduce){.sk{animation:none}html{scroll-behavior:auto}}
@@ -203,8 +197,6 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .item .meta{flex:1;min-width:140px}
 .item .meta b{display:block;font-weight:600}
 .item .meta small{color:var(--mut)}
-a.item{text-decoration:none;transition:border-color .12s}
-a.item:hover{border-color:var(--pink)}
 .avatar{width:72px;height:72px;border-radius:50%;background:var(--pink);display:grid;place-items:center;font-size:30px;font-weight:700}
 .mstats{display:flex;gap:32px;margin:16px 0 20px}
 .mstats b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em}
@@ -235,14 +227,13 @@ a.item:hover{border-color:var(--pink)}
 .pinfo h1{margin:0;font-size:24px;letter-spacing:-.025em;line-height:1.2;font-weight:700}
 .pbio{margin:8px 0 0;color:#cfcfd6;max-width:520px;white-space:pre-wrap}
 .pbio:empty{display:none}
-.plink{display:inline-block;margin-top:10px;margin-right:14px;font-size:13.5px;font-weight:500;color:var(--pink);text-decoration:none}
+.plink{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:500;color:var(--pink);text-decoration:none}
 .plink:hover{text-decoration:underline}
 .pstats{grid-column:1/-1;display:flex;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 .pstats div{flex:1}
 .pstats div+div{padding-left:20px;border-left:1px solid var(--line)}
 .pstats b{display:block;font-size:18px;font-weight:700}
 .pstats span{color:var(--mut);font-size:12px}
-@media(max-width:560px){.pstats div+div{padding-left:12px}.pstats b{font-size:16px}.pbody{padding:0 16px 18px}}
 .avrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
 .swatches button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 3px var(--s1)}
@@ -284,7 +275,6 @@ a.item:hover{border-color:var(--pink)}
 .cmlist{display:grid;gap:0;margin-top:10px}
 .cm{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
 .cm:first-child{border-top:0}
-.cm.rp{border-top:0;padding:10px 0 0}
 .cm .cb{min-width:0;flex:1}
 .cm .ch{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cm .ch b{font-size:14px;font-weight:600}
@@ -292,16 +282,6 @@ a.item:hover{border-color:var(--pink)}
 .cm .ch .dn{margin-left:auto;color:var(--mut);font-size:12.5px;font-weight:500}
 .cm .ch .dn:hover{color:var(--bad)}
 .cm .ct{margin-top:3px;white-space:pre-wrap;word-break:break-word;color:#d9d9de}
-.ca{display:flex;gap:16px;align-items:center;margin-top:6px}
-.ca button{display:inline-flex;align-items:center;gap:5px;color:var(--mut);font-size:12.5px;font-weight:600;padding:2px 0}
-.ca button:hover{color:var(--text)}
-.ca .cl svg{width:14px;height:14px}
-.ca .cl.on{color:var(--pink)}
-.ca .cl.on svg{fill:currentColor}
-.ca .cl .n{min-width:6px}
-.rbox:empty{display:none}
-.rbox .cmform{margin-top:8px}
-.reps{margin-top:6px;padding-left:14px;border-left:2px solid var(--line)}
 
 .nh{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 10px;font-size:14px;font-weight:600}
 .ne{padding:28px 14px;text-align:center;color:var(--mut);font-size:13.5px}
@@ -311,10 +291,9 @@ a.item:hover{border-color:var(--pink)}
 .ni.new:after{content:"";position:absolute;right:12px;top:16px;width:7px;height:7px;border-radius:50%;background:var(--pink)}
 .nic{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto;background:var(--s3)}
 .nic svg{width:16px;height:16px}
-.nic.like,.nic.clike{color:var(--pink)}
-.nic.like svg,.nic.clike svg{fill:currentColor}
-.nic.comment,.nic.reply{color:#7aa7ff}
-.nic.follow{color:var(--good)}
+.nic.like{color:var(--pink)}
+.nic.like svg{fill:currentColor}
+.nic.comment{color:#7aa7ff}
 .nt{display:grid;gap:2px;min-width:0;font-size:13.5px;line-height:1.4;padding-right:16px}
 .nt small{color:var(--mut);font-size:12px}
 .nt .nq{color:#c4c4cc;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -406,8 +385,6 @@ if(draft.key==='yes'&&draft.access==='free')draft.access='key';
 delete draft.key;
 const saveDraft=()=>LS.set('spl_draft',draft);
 const isUUID=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'');
-const uAttr=id=>id&&(!REMOTE||isUUID(id))?` data-u="${esc(encodeURIComponent(id))}" role="link" tabindex="0"`:'';
-const uLink=(id,name)=>uAttr(id)?`<span class="ulink"${uAttr(id)}>${esc(name)}</span>`:esc(name);
 if(REMOTE){
   const _s=getSess();if(_s&&!_s.token)LS.set('spl_sess',null);
   if(draft.editId&&!isUUID(draft.editId)){draft=fresh();saveDraft()}
@@ -492,10 +469,6 @@ const DB={
     if(REMOTE)return rq(`/rest/v1/scripts?user_id=eq.${encodeURIComponent(s.id)}&select=id,title,game_name,icon,features,executors,key_system,paid,views,created_at&order=created_at.desc`);
     return LS.get('spl_scripts',[]).filter(x=>x.user_id===s.id).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
   },
-  async byUser(uid){
-    if(REMOTE)return rq(`/rest/v1/scripts?user_id=eq.${encodeURIComponent(uid)}&select=id,user_id,title,game_name,icon,features,executors,key_system,paid,views,author,created_at&order=created_at.desc&limit=200`);
-    return LS.get('spl_scripts',[]).filter(x=>x.user_id===uid).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
-  },
   async save(item,id){
     const s=getSess();
     if(REMOTE){
@@ -538,114 +511,42 @@ const DB={
   },
   async notifs(){
     const s=getSess();if(!s)return[];
-    const mine=await DB.mine(),ids=mine.map(x=>x.id),titles={};
+    const mine=await DB.mine();
+    if(!mine.length)return[];
+    const ids=mine.map(x=>x.id),titles={};
     mine.forEach(x=>titles[x.id]=x.title);
-    let likes=[],coms=[],fol=[],myc=[],cl=[],reps=[];
+    let likes,coms;
     if(REMOTE){
-      const me=encodeURIComponent(s.id),list=ids.map(encodeURIComponent).join(',');
-      [likes,coms,fol,myc]=await Promise.all([
-        ids.length?rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`):[],
-        ids.length?rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`):[],
-        rq(`/rest/v1/follows?following_id=eq.${me}&select=follower_id,author,created_at&order=created_at.desc&limit=50`),
-        rq(`/rest/v1/script_comments?user_id=eq.${me}&select=id,script_id,body&order=created_at.desc&limit=100`)
+      const list=ids.map(encodeURIComponent).join(','),me=encodeURIComponent(s.id);
+      [likes,coms]=await Promise.all([
+        rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`),
+        rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
       ]);
-      if(myc.length){
-        const cids=myc.map(c=>encodeURIComponent(c.id)).join(',');
-        [cl,reps]=await Promise.all([
-          rq(`/rest/v1/comment_likes?comment_id=in.(${cids})&user_id=neq.${me}&select=comment_id,user_id,author,created_at&order=created_at.desc&limit=50`),
-          rq(`/rest/v1/script_comments?parent_id=in.(${cids})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
-        ]);
-      }
     }else{
-      const allC=LS.get('spl_comments',[]);
       likes=LS.get('spl_likemeta',[]).filter(l=>ids.includes(l.script_id)&&l.user_id!==s.id);
-      coms=allC.filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
-      fol=LS.get('spl_follows',[]).filter(f=>f.following_id===s.id).map(f=>({follower_id:f.follower_id,author:f.author,created_at:f.created_at}));
-      myc=allC.filter(c=>c.user_id===s.id);
-      cl=LS.get('spl_clikes',[]).filter(l=>myc.some(c=>c.id===l.comment_id)&&l.user_id!==s.id);
-      reps=allC.filter(c=>c.parent_id&&myc.some(m=>m.id===c.parent_id)&&c.user_id!==s.id);
+      coms=LS.get('spl_comments',[]).filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
     }
-    const mc={};myc.forEach(c=>mc[c.id]=c);
-    const cset=new Set(coms.map(c=>c.id));
     const out=[
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
-      ...coms.map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
-      ...fol.map(f=>({type:'follow',user_id:f.follower_id,author:f.author||'Someone',created_at:f.created_at})),
-      ...cl.map(l=>({type:'clike',script_id:(mc[l.comment_id]||{}).script_id,user_id:l.user_id,author:l.author||'Someone',body:(mc[l.comment_id]||{}).body,created_at:l.created_at})).filter(n=>n.script_id),
-      ...reps.filter(r=>!cset.has(r.id)).map(r=>({type:'reply',script_id:r.script_id,user_id:r.user_id,author:r.author,body:r.body,created_at:r.created_at}))
+      ...coms.map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
     ];
-    return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,40);
+    return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
   async comments(id){
-    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,parent_id,created_at&order=created_at.desc&limit=300`);
+    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at&order=created_at.desc&limit=100`);
     return LS.get('spl_comments',[]).filter(c=>c.script_id===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   },
-  async addComment(id,body,parent){
+  async addComment(id,body){
     const s=getSess();
-    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body,...(parent?{parent_id:parent}:{})},headers:{Prefer:'return=representation'}});return r[0]}
+    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body},headers:{Prefer:'return=representation'}});return r[0]}
     const all=LS.get('spl_comments',[]);
-    const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,parent_id:parent||null,created_at:new Date().toISOString()};
+    const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,created_at:new Date().toISOString()};
     all.push(n);LS.set('spl_comments',all);return n;
   },
   async removeComment(id){
     const s=getSess();
     if(REMOTE){await rq(`/rest/v1/script_comments?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
-    const all=LS.get('spl_comments',[]);
-    if(!all.some(c=>c.id===id&&c.user_id===s.id))return;
-    LS.set('spl_comments',all.filter(c=>c.id!==id&&c.parent_id!==id));
-    LS.set('spl_clikes',LS.get('spl_clikes',[]).filter(l=>l.comment_id!==id));
-  },
-  async commentLikes(ids){
-    const out={};if(!ids.length)return out;
-    let rows;
-    if(REMOTE)rows=await rq(`/rest/v1/comment_likes?comment_id=in.(${ids.map(encodeURIComponent).join(',')})&select=comment_id,user_id&limit=10000`);
-    else rows=LS.get('spl_clikes',[]).filter(l=>ids.includes(l.comment_id));
-    rows.forEach(r=>(out[r.comment_id]||(out[r.comment_id]=[])).push(r.user_id));
-    return out;
-  },
-  async likeComment(id){
-    const s=getSess();
-    if(REMOTE){await rq('/rest/v1/comment_likes',{method:'POST',body:{comment_id:id,user_id:s.id,author:s.username},headers:{Prefer:'return=minimal'}});return}
-    const all=LS.get('spl_clikes',[]).filter(l=>!(l.comment_id===id&&l.user_id===s.id));
-    all.push({comment_id:id,user_id:s.id,author:s.username,created_at:new Date().toISOString()});LS.set('spl_clikes',all);
-  },
-  async unlikeComment(id){
-    const s=getSess();
-    if(REMOTE){await rq(`/rest/v1/comment_likes?comment_id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(s.id)}`,{method:'DELETE'});return}
-    LS.set('spl_clikes',LS.get('spl_clikes',[]).filter(l=>!(l.comment_id===id&&l.user_id===s.id)));
-  },
-  async followInfo(uid){
-    const s=getSess();let a,b;
-    if(REMOTE){
-      const u=encodeURIComponent(uid);
-      [a,b]=await Promise.all([
-        rq(`/rest/v1/follows?following_id=eq.${u}&select=follower_id&limit=10000`),
-        rq(`/rest/v1/follows?follower_id=eq.${u}&select=following_id&limit=10000`)
-      ]);
-    }else{
-      const all=LS.get('spl_follows',[]);
-      a=all.filter(f=>f.following_id===uid);b=all.filter(f=>f.follower_id===uid);
-    }
-    return{followers:a.length,following:b.length,isF:!!s&&a.some(f=>f.follower_id===s.id)};
-  },
-  async followList(uid,kind){
-    const col=kind==='followers'?'following_id':'follower_id',pick=kind==='followers'?'follower_id':'following_id';
-    let rows;
-    if(REMOTE)rows=await rq(`/rest/v1/follows?${col}=eq.${encodeURIComponent(uid)}&select=${pick}&order=created_at.desc&limit=200`);
-    else rows=LS.get('spl_follows',[]).filter(f=>f[col]===uid);
-    return rows.map(r=>r[pick]);
-  },
-  async follow(uid){
-    const s=getSess();
-    if(uid===s.id)throw new Error('You cannot follow yourself');
-    if(REMOTE){await rq('/rest/v1/follows',{method:'POST',body:{follower_id:s.id,following_id:uid,author:s.username},headers:{Prefer:'return=minimal'}});return}
-    const all=LS.get('spl_follows',[]).filter(f=>!(f.follower_id===s.id&&f.following_id===uid));
-    all.push({follower_id:s.id,following_id:uid,author:s.username,created_at:new Date().toISOString()});LS.set('spl_follows',all);
-  },
-  async unfollow(uid){
-    const s=getSess();
-    if(REMOTE){await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(s.id)}&following_id=eq.${encodeURIComponent(uid)}`,{method:'DELETE'});return}
-    LS.set('spl_follows',LS.get('spl_follows',[]).filter(f=>!(f.follower_id===s.id&&f.following_id===uid)));
+    LS.set('spl_comments',LS.get('spl_comments',[]).filter(c=>!(c.id===id&&c.user_id===s.id)));
   }
 };
 
@@ -655,18 +556,6 @@ $('mOut').onclick=()=>{Auth.logout();toast('Logged out');route()};
 $('menu').onclick=e=>{if(e.target.closest('a,button'))closeMenu()};
 document.addEventListener('click',e=>{if(!e.target.closest('#menu'))closeMenu()});
 document.addEventListener('click',e=>{const d=$('sDrop');if(d&&!e.target.closest('.sbw'))d.classList.add('hidden')});
-document.addEventListener('click',e=>{
-  const u=e.target.closest&&e.target.closest('[data-u]');
-  if(!u)return;
-  e.preventDefault();e.stopPropagation();
-  closeMenu();closeNotif();
-  go('user/'+u.dataset.u);
-},true);
-document.addEventListener('keydown',e=>{
-  if(e.key!=='Enter')return;
-  const u=e.target.closest&&e.target.closest('[data-u]');
-  if(u){e.preventDefault();go('user/'+u.dataset.u)}
-});
 $('tSearch').onclick=()=>{go('home');setTimeout(()=>{const i=$('hQ');if(i){i.focus();i.scrollIntoView({block:'center'})}},60)};
 
 
@@ -675,21 +564,11 @@ const nKey=()=>{const s=getSess();return s?'spl_nread_'+s.id:''};
 function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return notifs.filter(n=>new Date(n.created_at).getTime()>t).length}
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
-const nIcon=t=>t==='follow'?ICON_USER:(t==='comment'||t==='reply')?ICON_CHAT:ICON_HEART;
-const nText=n=>{
-  const a=`<b>${esc(n.author)}</b>`;
-  if(n.type==='like')return `${a} liked <b>${esc(n.title||'your script')}</b>`;
-  if(n.type==='comment')return `${a} commented on <b>${esc(n.title||'your script')}</b>`;
-  if(n.type==='clike')return `${a} liked your comment`;
-  if(n.type==='reply')return `${a} replied to your comment`;
-  return `${a} started following you`;
-};
-const nHref=n=>n.type==='follow'?'#user/'+encodeURIComponent(n.user_id):'#script/'+encodeURIComponent(n.script_id);
 function nRender(){
   const p=$('nPanel');
-  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and followers.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${nIcon(n.type)}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
-  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments, replies and new followers show up here.</div>'}`;
+  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes and comments on your scripts.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='like'?'liked':'commented on'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes and comments on your scripts show up here.</div>'}`;
 }
 async function nLoad(){
   if(!getSess()){notifs=[];nBadge();return}
@@ -729,7 +608,7 @@ function route(){
   document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
   const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
   closeMenu();closeNotif();nLoad();
-  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg),user:()=>pageUser(arg)}[p]||pageHome)();
+  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg)}[p]||pageHome)();
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
@@ -740,8 +619,7 @@ const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
 const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
 function cardHTML(it,link=true){
   const img=safeUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
-  const by=link?uLink(it.user_id,it.author||'you'):esc(it.author||'you');
-  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${by}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
+  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${esc(it.author||'you')}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
 }
 const fcount=()=>(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
 function syncFilters(){
@@ -885,7 +763,7 @@ async function pageScript(id){
     DB.view(id);
     const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${uLink(it.user_id,it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
       ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
@@ -897,7 +775,7 @@ async function pageScript(id){
     <section class="card cmsec"><h2>Comments<span class="cnt" id="cmCount">0</span></h2><div id="cmForm"></div><div class="cmlist" id="cmList"><div class="hint">Loading comments...</div></div></section>
     <div id="related"></div>`;
     $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString('en-US')+' characters';
-    Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=`<span class="uav"${uAttr(it.user_id)}>${avatarHTML(p,it.author,24)}</span>${uLink(it.user_id,it.author)}${ownerTag(it.user_id)}`}).catch(()=>{});
+    Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'+ownerTag(it.user_id)}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
     initLikes(it);
@@ -934,19 +812,8 @@ async function initLikes(it){
 async function initComments(it){
   const form=$('cmForm');if(!form)return;
   const s=getSess();
-  const COOLDOWN=10*60*1000,REPLY_COOLDOWN=60*1000;
-  let list=[],profs={},likes={},posting=false;
-  const send=async(v,parent)=>{
-    const k=(parent?'spl_rp_':'spl_cm_')+s.id,lim=parent?REPLY_COOLDOWN:COOLDOWN;
-    const wait=lim-(Date.now()-LS.get(k,0));
-    if(wait>0)throw new Error(`Cooldown active. You can ${parent?'reply':'comment'} again in ${wait>=60000?Math.ceil(wait/60000)+' min':Math.ceil(wait/1000)+' s'}.`);
-    const c=await DB.addComment(it.id,v,parent);
-    LS.set(k,Date.now());
-    const cur=getSess();
-    if(cur&&cur.profile)profs[cur.id]=cur.profile;
-    list.push(c);likes[c.id]=[];
-    return c;
-  };
+  const COOLDOWN=10*60*1000;
+  let list=[],profs={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0;
   if(s){
     form.innerHTML=`<div class="cmform"><textarea id="cmIn" maxlength="500" placeholder="Write a comment..."></textarea><div class="cmfoot"><span class="hint" id="cmN">0 / 500</span><button type="button" class="btn" id="cmPost">Post comment</button></div><div id="cmMsg"></div></div>`;
     $('cmIn').addEventListener('input',()=>{$('cmN').textContent=$('cmIn').value.length+' / 500'});
@@ -954,9 +821,16 @@ async function initComments(it){
       const v=$('cmIn').value.trim(),m=$('cmMsg');
       if(!v){m.innerHTML='<div class="err">Write something first.</div>';return}
       if(posting)return;
+      const wait=COOLDOWN-(Date.now()-last);
+      if(wait>0){m.innerHTML=`<div class="err">Cooldown active. You can comment again in ${Math.ceil(wait/60000)} min.</div>`;return}
       posting=true;$('cmPost').disabled=true;m.innerHTML='';
       try{
-        await send(v,null);
+        const c=await DB.addComment(it.id,v);
+        last=Date.now();
+        LS.set('spl_cm_'+s.id,last);
+        const cur=getSess();
+        if(cur&&cur.profile)profs[cur.id]=cur.profile;
+        list.unshift(c);
         $('cmIn').value='';$('cmN').textContent='0 / 500';
         draw();
       }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
@@ -965,78 +839,22 @@ async function initComments(it){
   }else{
     form.innerHTML='<p class="hint" style="margin:0 0 6px"><a href="#account" style="color:var(--pink);font-weight:700">Log in</a> to write a comment.</p>';
   }
-  const openReply=id=>{
-    if(!getSess()){toast('Log in to reply',1);return}
-    const c=list.find(x=>x.id===id),box=document.getElementById('rb-'+id);
-    if(!c||!box)return;
-    if(box.firstChild){box.innerHTML='';return}
-    const top=c.parent_id&&list.some(x=>x.id===c.parent_id)?c.parent_id:c.id;
-    box.innerHTML=`<div class="cmform"><textarea maxlength="500" placeholder="Reply to ${esc(c.author)}..."></textarea><div class="cmfoot"><span class="hint">0 / 500</span><span class="rowact"><button type="button" class="btn sec" data-x>Cancel</button><button type="button" class="btn" data-p>Reply</button></span></div><div class="rmsg"></div></div>`;
-    const ta=box.querySelector('textarea'),cnt=box.querySelector('.hint'),msg=box.querySelector('.rmsg'),pb=box.querySelector('[data-p]');
-    if(c.parent_id)ta.value='@'+c.author+' ';
-    cnt.textContent=ta.value.length+' / 500';
-    ta.addEventListener('input',()=>{cnt.textContent=ta.value.length+' / 500'});
-    ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
-    box.querySelector('[data-x]').onclick=()=>{box.innerHTML=''};
-    pb.onclick=async()=>{
-      const v=ta.value.trim();
-      if(!v){msg.innerHTML='<div class="err">Write something first.</div>';return}
-      if(posting)return;
-      posting=true;pb.disabled=true;msg.innerHTML='';
-      try{await send(v,top);draw()}
-      catch(e){msg.innerHTML=`<div class="err">${esc(e.message)}</div>`;pb.disabled=false}
-      posting=false;
-    };
-  };
-  const toggleLike=async b=>{
-    const cur=getSess();
-    if(!cur){toast('Log in to like comments',1);return}
-    if(b.dataset.busy)return;
-    b.dataset.busy='1';
-    const id=b.dataset.l,arr=likes[id]||(likes[id]=[]),on=arr.includes(cur.id);
-    try{
-      if(on){await DB.unlikeComment(id);likes[id]=arr.filter(x=>x!==cur.id)}
-      else{await DB.likeComment(id);arr.push(cur.id)}
-      b.classList.toggle('on',!on);b.setAttribute('aria-pressed',String(!on));
-      b.querySelector('.n').textContent=likes[id].length||'';
-    }catch(e){toast(e.message,1)}
-    delete b.dataset.busy;
-  };
   const draw=()=>{
     const box=$('cmList');if(!box)return;
     $('cmCount').textContent=list.length;
     if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
-    const cur=getSess(),byId={},kids={};
-    list.forEach(c=>byId[c.id]=c);
-    list.forEach(c=>{if(c.parent_id&&byId[c.parent_id])(kids[c.parent_id]||(kids[c.parent_id]=[])).push(c)});
-    const tops=list.filter(c=>!c.parent_id||!byId[c.parent_id]).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    const one=(c,rep)=>{
-      const l=likes[c.id]||[],on=!!cur&&l.includes(cur.id),k=(kids[c.id]||[]).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-      const del=cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:'';
-      return `<div class="cm${rep?' rp':''}"><span class="uav"${uAttr(c.user_id)}>${avatarHTML(profs[c.user_id],c.author,rep?30:36)}</span><div class="cb"><div class="ch"><b>${uLink(c.user_id,c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${del}</div><div class="ct">${esc(c.body)}</div><div class="ca"><button type="button" class="cl${on?' on':''}" data-l="${esc(c.id)}" aria-pressed="${on}" aria-label="Like comment">${ICON_HEART}<span class="n">${l.length||''}</span></button><button type="button" data-r="${esc(c.id)}">Reply</button></div><div class="rbox" id="rb-${esc(c.id)}"></div>${!rep&&k.length?`<div class="reps">${k.map(x=>one(x,true)).join('')}</div>`:''}</div></div>`;
-    };
-    box.innerHTML=tops.map(c=>one(c,false)).join('');
-    box.onclick=async e=>{
-      const d=e.target.closest('[data-d]'),l=e.target.closest('[data-l]'),r=e.target.closest('[data-r]');
-      if(d){
-        const id=d.dataset.d,hasKids=list.some(x=>x.parent_id===id);
-        if(!await ask('Delete this comment?',hasKids?'This comment and all replies to it will be removed for everyone.':'This comment will be removed for everyone.'))return;
-        try{
-          await DB.removeComment(id);
-          const gone=new Set([id,...list.filter(x=>x.parent_id===id).map(x=>x.id)]);
-          list=list.filter(x=>!gone.has(x.id));draw();toast('Comment deleted');
-        }catch(er){toast(er.message,1)}
-      }else if(l)toggleLike(l);
-      else if(r)openReply(r.dataset.r);
-    };
+    const cur=getSess();
+    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      if(!await ask('Delete this comment?','This comment will be removed for everyone.'))return;
+      try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
+    });
   };
   try{
     list=await DB.comments(it.id);
     if(!$('cmList'))return;
     draw();
-    const [pf,lk]=await Promise.all([Prof.many([...new Set(list.map(c=>c.user_id))]),DB.commentLikes(list.map(c=>c.id)).catch(()=>({}))]);
-    if(!$('cmList'))return;
-    profs=pf;likes=lk;
+    profs=await Prof.many([...new Set(list.map(c=>c.user_id))]);
     draw();
   }catch(e){
     if($('cmList'))$('cmList').innerHTML=`<p class="err">Could not load comments: ${esc(e.message)}</p>`;
@@ -1200,9 +1018,9 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=id,avatar,bio,link,color,username`);return r[0]||{}}catch(e){return{}}}
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color`);return r[0]||{}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
-    return u?{id,avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||''}:{};
+    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||''}:{};
   },
   async many(ids){
     const out={};
@@ -1210,19 +1028,16 @@ const Prof={
     if(REMOTE){
       const ok=ids.filter(isUUID);
       if(!ok.length)return out;
-      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color,username`);r.forEach(p=>out[p.id]=p)}catch(e){}
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color`);r.forEach(p=>out[p.id]=p)}catch(e){}
       return out;
     }
     const all=LS.get('spl_users',{});
-    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||'',username:u.username||''}});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||''}});
     return out;
   },
   async sync(){
     const s=getSess();if(!s)return{};
     const p=await Prof.load(s.id);
-    if(REMOTE&&p.username!==s.username){
-      try{await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,username:s.username},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});p.username=s.username}catch(e){}
-    }
     let created=s.created;
     try{if(REMOTE){const u=await rq('/auth/v1/user');created=u.created_at}else{const u=LS.get('spl_users',{})[s.id];if(u)created=u.created}}catch(e){}
     LS.set('spl_sess',{...getSess(),profile:p,created});
@@ -1231,7 +1046,7 @@ const Prof={
   },
   async save(p){
     const s=getSess();
-    if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,username:s.username,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
+    if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
     else{const all=LS.get('spl_users',{});if(!all[s.id])throw new Error('Account not found');Object.assign(all[s.id],p);LS.set('spl_users',all)}
     LS.set('spl_sess',{...getSess(),profile:p});
     headerSync();
@@ -1253,65 +1068,6 @@ function readAvatar(file){
   });
 }
 const onAccount=()=>(location.hash.slice(1)||'home').split('/')[0]==='account';
-
-async function pageUser(raw){
-  let id='';
-  try{id=decodeURIComponent(raw||'')}catch(e){}
-  const hash=location.hash,me=getSess(),self=!!me&&me.id===id;
-  const missing=()=>{$('app').innerHTML='<div class="card empty"><h3>User not found</h3><a class="btn" href="#home">Back to scripts</a></div>'};
-  if(!id||(REMOTE&&!isUUID(id))){missing();return}
-  $('app').innerHTML='<div class="sk" style="height:240px"></div>';
-  try{
-    const [p,items,info]=await Promise.all([Prof.load(id),DB.byUser(id),DB.followInfo(id)]);
-    if(location.hash!==hash)return;
-    if(!p.id&&!items.length&&!self){missing();return}
-    const name=self?me.username:(p.username||(items[0]&&items[0].author)||'User');
-    const views=items.reduce((a,x)=>a+(x.views||0),0);
-    const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
-    const plink=safeUrl(p.link);
-    let tab='scripts',isF=info.isF,fers=info.followers,busy=false;
-    $('app').innerHTML=`
-    <section class="prof"><div class="pban" style="background:${work.color}"></div><div class="pbody"><div id="pAv">${avatarHTML(work,name,88)}</div>
-      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1>${p.bio?`<p class="pbio">${esc(p.bio)}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}
-        <div class="actions" style="margin-top:12px">${self?'<a class="btn sec" href="#account">Edit profile</a>':'<button type="button" class="btn" id="fBtn">Follow</button>'}</div></div>
-      <div class="pstats"><div><b>${items.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b id="stFers">${fmt(fers)}</b><span>Followers</span></div><div><b>${fmt(info.following)}</b><span>Following</span></div></div></div></section>
-    <div class="seg2" id="uTabs"><button data-v="scripts">Scripts</button><button data-v="followers">Followers</button><button data-v="following">Following</button></div>
-    <div id="uBody"></div>`;
-    const paintF=()=>{
-      const fb=$('fBtn');if(fb){fb.textContent=isF?'Following':'Follow';fb.className='btn'+(isF?' sec':'')}
-      const st=$('stFers');if(st)st.textContent=fmt(fers);
-    };
-    const drawTab=async()=>{
-      document.querySelectorAll('#uTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===tab));
-      const box=$('uBody');if(!box)return;
-      if(tab==='scripts'){
-        box.innerHTML=items.length?`<div class="feed">${items.map(x=>cardHTML({...x,author:name,user_id:id})).join('')}</div>`:`<div class="empty"><h3>No scripts yet</h3>${self?'<a class="btn" href="#publish">Publish a script</a>':'This user has not published anything.'}</div>`;
-        return;
-      }
-      const t=tab;
-      box.innerHTML='<div class="hint">Loading...</div>';
-      try{
-        const ids=await DB.followList(id,t),pf=await Prof.many(ids);
-        if(tab!==t||!$('uBody'))return;
-        box.innerHTML=ids.length?`<div class="card" style="margin-top:14px;padding-top:10px">${ids.map(u=>{const q=pf[u]||{},n=q.username||'User';return `<a class="item" href="#user/${encodeURIComponent(u)}">${avatarHTML(q,n,44)}<div class="meta"><b>${esc(n)}${ownerTag(u)}</b></div></a>`}).join('')}</div>`:`<div class="empty"><h3>${t==='followers'?'No followers yet':'Not following anyone yet'}</h3></div>`;
-      }catch(e){if($('uBody'))$('uBody').innerHTML=`<p class="err">${esc(e.message)}</p>`}
-    };
-    document.querySelectorAll('#uTabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.v;drawTab()});
-    const fb=$('fBtn');
-    if(fb)fb.onclick=async()=>{
-      if(!getSess()){toast('Log in to follow users',1);return}
-      if(busy)return;busy=true;fb.disabled=true;
-      try{
-        if(isF){await DB.unfollow(id);isF=false;fers=Math.max(0,fers-1)}
-        else{await DB.follow(id);isF=true;fers++}
-        if(tab==='followers')drawTab();
-      }catch(e){toast(e.message,1)}
-      busy=false;fb.disabled=false;paintF();
-    };
-    paintF();drawTab();
-  }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
-}
-
 async function pageAccount(){
   if(getSess()){
     $('app').innerHTML='<div class="sk" style="height:240px"></div>';
@@ -1347,4 +1103,102 @@ function renderProfile(mine){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
   const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
   const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
-  cons
+  const plink=safeUrl(p.link);
+  $('app').innerHTML=`
+  <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
+    <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
+    <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
+  <div class="grid2 eq">
+    <div class="card"><h2>Edit profile</h2>
+      <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
+        <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG or WebP. Cropped to a square.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
+        <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
+      <label>Accent color</label><div class="swatches" id="sw"></div>
+      <label>Bio</label><textarea id="bio" maxlength="160" style="min-height:80px;font-family:inherit" placeholder="What do you make?"></textarea><div class="hint" id="bioN"></div>
+      <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
+      <div class="actions"><button class="btn" id="saveP">Save profile</button></div><div id="pmsg"></div></div>
+    <div style="display:grid;gap:18px">
+      ${REMOTE?'':`<div class="card"><h2>Change password</h2>
+        <label>Current password</label><input type="password" id="op">
+        <label>New password (min. 8 characters)</label><input type="password" id="np">
+        <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>`}
+      <div class="card"><h2>Session</h2><div class="actions" style="margin-top:0"><button class="btn danger" id="logout">Log out</button></div></div>
+    </div></div>
+  <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
+  $('bio').value=p.bio||'';$('plinkIn').value=p.link||'';
+  const paint=()=>{
+    $('pBan').style.background=work.color;
+    $('pAv').innerHTML=avatarHTML(work,s.username,88);
+    $('eAv').innerHTML=avatarHTML(work,s.username,80);
+    $('rmBtn').classList.toggle('hidden',!work.avatar);
+    $('sw').innerHTML=AV_COLORS.map(c=>`<button type="button" class="${c===work.color?'on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
+    $('sw').querySelectorAll('button').forEach(b=>b.onclick=()=>{work.color=b.dataset.c;paint()});
+    $('bioN').textContent=$('bio').value.length+' / 160';
+  };
+  paint();
+  $('bio').addEventListener('input',()=>{$('bioN').textContent=$('bio').value.length+' / 160';$('pBio').textContent=$('bio').value});
+  $('upBtn').onclick=()=>$('file').click();
+  $('upLink').onclick=()=>$('file').click();
+  $('file').onchange=async()=>{
+    const f=$('file').files[0];if(!f)return;
+    try{work.avatar=await readAvatar(f);paint()}catch(e){toast(e.message,1)}
+    $('file').value='';
+  };
+  $('rmBtn').onclick=()=>{work.avatar='';paint()};
+  $('saveP').onclick=async()=>{
+    const link=$('plinkIn').value.trim(),m=$('pmsg');
+    if(link&&!safeUrl(link)){m.innerHTML='<div class="err">The link must start with https://</div>';return}
+    $('saveP').disabled=true;
+    try{
+      await Prof.save({avatar:work.avatar,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
+      m.innerHTML='';toast('Profile saved');renderProfile(mine);
+    }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
+    $('saveP').disabled=false;
+  };
+  let mSort='new';
+  const drawMine=()=>{
+    document.querySelectorAll('#mSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===mSort));
+    const list=[...mine].sort((x,y)=>mSort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at)),box=$('myFeed');
+    if(!list.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Nothing published yet</h3>Your scripts will show up here.<div class="actions" style="justify-content:center"><a class="btn" href="#publish">Publish a script</a></div></div>';return}
+    box.innerHTML=list.map(it=>`<div class="mc">${cardHTML({...it,author:s.username,user_id:s.id})}<div class="mcact"><button type="button" class="btn sec" data-e="${esc(it.id)}">Edit</button><button type="button" class="btn danger" data-d="${esc(it.id)}">Delete</button></div></div>`).join('');
+    box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
+      try{
+        const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
+        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
+        saveDraft();go('publish');
+      }catch(e){toast(e.message,1)}
+    });
+    box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;
+      try{await DB.remove(b.dataset.d);toast('Script deleted');pageAccount()}catch(e){toast(e.message,1)}
+    });
+  };
+  document.querySelectorAll('#mSort button').forEach(b=>b.onclick=()=>{mSort=b.dataset.v;drawMine()});
+  $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
+  drawMine();
+  $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
+  if($('cp'))$('cp').onclick=async()=>{
+    if($('np').value.length<8){$('msg').innerHTML='<div class="err">New password is too short.</div>';return}
+    try{await Auth.changePassword(REMOTE?'':$('op').value,$('np').value);$('msg').innerHTML='<div class="good">Password updated.</div>'}catch(e){$('msg').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+  };
+}
+async function oauthReturn(){
+  const qs=new URLSearchParams(location.search),hs=new URLSearchParams(location.hash.slice(1));
+  const hasTok=hs.get('access_token'),errMsg=hs.get('error_description')||qs.get('error_description');
+  if(!hasTok&&!errMsg)return;
+  history.replaceState(null,'',location.pathname+'#home');
+  if(errMsg){toast(errMsg.replace(/\+/g,' '),1);return}
+  try{
+    const token=hs.get('access_token'),refresh=hs.get('refresh_token');
+    const r=await fetch(CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
+    if(!r.ok)throw new Error('Login failed');
+    const u=await r.json();
+    LS.set('spl_sess',sessFrom({user:u,access_token:token,refresh_token:refresh}));
+    try{await Prof.sync()}catch(e){}
+    toast('Logged in');
+  }catch(e){toast(e.message,1)}
+}
+oauthReturn().finally(route);
+</script>
+</body>
+</html>
