@@ -334,7 +334,7 @@ function timeAgo(d){
   if(s<3600)return Math.floor(s/60)+'min ago';
   if(s<86400)return Math.floor(s/3600)+'h ago';
   if(s<2592000)return Math.floor(s/86400)+'d ago';
-  return new Date(d).toLocaleDateString();
+  return new Date(d).toLocaleDateString('en-US');
 }
 function toast(m,bad){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),2600)}
 async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -653,10 +653,10 @@ async function pageScript(id){
     const it=await DB.get(id);
     if(!it){$('app').innerHTML='<div class="card empty"><h3>Script not found</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
     DB.view(id);
-    const s=getSess(),own=s&&s.id===it.user_id,img=safeUrl(it.icon),link=safeUrl(it.link);
+    const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString()}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
-      ${own?'<div class="actions" style="margin:0"><button class="btn sec" id="edBtn">Edit</button><button class="btn danger" id="delBtn">Delete</button></div>':''}</div>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
       <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
@@ -666,16 +666,16 @@ async function pageScript(id){
       ${(it.executors||[]).length?`<label>Tested on</label><div class="chips">${it.executors.map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}</div>`:''}</div></div>
     <section class="card cmsec"><h2>Comments<span class="cnt" id="cmCount">0</span></h2><div id="cmForm"></div><div class="cmlist" id="cmList"><div class="hint">Loading comments...</div></div></section>
     <div id="related"></div>`;
-    $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString()+' characters';
+    $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString('en-US')+' characters';
     Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'+ownerTag(it.user_id)}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
     initLikes(it);
     initComments(it);
     if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
-    if(own){
-      $('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
-      $('delBtn').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');go('mine')}catch(e){toast(e.message,1)}};
+    if(own||admin){
+      if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
+      $('delBtn').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
   }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
 }
@@ -736,7 +736,7 @@ async function initComments(it){
     $('cmCount').textContent=list.length;
     if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
     const cur=getSess();
-    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&cur.id===c.user_id?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Delete this comment?'))return;
       try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
@@ -787,7 +787,7 @@ function pagePublish(){
   $('pubBtn').onclick=publish;
   $('clearBtn').onclick=()=>{draft=fresh();saveDraft();pagePublish()};
 }
-function codeInfo(){const el=$('codeInfo');if(el)el.textContent=draft.code?`${draft.code.split('\n').length} lines, ${draft.code.length.toLocaleString()} characters`:''}
+function codeInfo(){const el=$('codeInfo');if(el)el.textContent=draft.code?`${draft.code.split('\n').length} lines, ${draft.code.length.toLocaleString('en-US')} characters`:''}
 function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:g?g.icon:'',views:0,author:s?s.username:'you',user_id:s?s.id:'',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
 function addFeat(){const v=$('featIn').value.trim().slice(0,40);if(!v)return;if(!draft.features.includes(v))draft.features.push(v);$('featIn').value='';saveDraft();renderChips();renderPreview()}
 function renderChips(){
@@ -993,7 +993,7 @@ async function pageAccount(){
 }
 function renderProfile(mine){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
-  const since=s.created?new Date(s.created).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'-';
+  const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
   const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
