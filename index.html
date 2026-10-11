@@ -243,6 +243,27 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,Consolas,mono
 .mc .sc{flex:1}
 .mcact{display:flex;gap:8px}
 .mcact .btn{flex:1;padding:9px 12px;font-size:14px}
+.lk{display:inline-flex;align-items:center;gap:8px}
+.lk svg{width:18px;height:18px;transition:transform .15s}
+.lk:hover svg{transform:scale(1.15)}
+.lk.on{border-color:var(--pink);color:var(--pink)}
+.lk.on svg{fill:currentColor}
+.lk .n{font-weight:800;min-width:8px}
+.cmsec{margin-top:18px}
+.cmsec h2 .cnt{color:var(--mut);font-weight:600;font-size:15px;margin-left:6px}
+.cmform{display:grid;gap:8px;margin-bottom:6px}
+.cmform textarea{min-height:84px;font-family:inherit;font-size:15px}
+.cmfoot{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cmfoot .hint{margin:0}
+.cmlist{display:grid;gap:4px;margin-top:10px}
+.cm{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.cm:first-child{border-top:0}
+.cm .cb{min-width:0;flex:1}
+.cm .ch{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cm .ch b{font-size:15px}
+.cm .ch small{color:var(--mut);font-size:12px}
+.cm .ch .dn{margin-left:auto;color:var(--bad);font-size:13px;font-weight:700}
+.cm .ct{margin-top:4px;white-space:pre-wrap;word-break:break-word;color:#e6dce3}
 #toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99;display:grid;gap:8px;justify-items:center}
 .toast{background:var(--s3);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600}
 .toast.bad{border-color:var(--bad)}
@@ -284,6 +305,7 @@ const EXECUTORS=['Potassium','Matcha','Xeno','Bunni.lol','Photon','Synapse Z','A
 const SUGG=['Blox Fruits','Brookhaven','Adopt Me','Grow a Garden','Steal a Brainrot','Murder Mystery 2','Pet Simulator 99','Fisch','Arsenal','Doors'];
 const PAGE=12;
 const ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/></svg>';
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -418,6 +440,36 @@ const DB={
       if(REMOTE){await rq('/rest/v1/rpc/increment_views',{method:'POST',body:{sid:id}});return}
       const all=LS.get('spl_scripts',[]),i=all.findIndex(x=>x.id===id);if(i>=0){all[i].views=(all[i].views||0)+1;LS.set('spl_scripts',all)}
     }catch(e){}
+  },
+  async likes(id){
+    if(REMOTE){const r=await rq(`/rest/v1/script_likes?script_id=eq.${encodeURIComponent(id)}&select=user_id&limit=10000`);return r.map(x=>x.user_id)}
+    return LS.get('spl_likes',{})[id]||[];
+  },
+  async like(id){
+    const s=getSess();
+    if(REMOTE){await rq('/rest/v1/script_likes',{method:'POST',body:{script_id:id,user_id:s.id},headers:{Prefer:'return=minimal'}});return}
+    const all=LS.get('spl_likes',{}),a=all[id]||[];if(!a.includes(s.id))a.push(s.id);all[id]=a;LS.set('spl_likes',all);
+  },
+  async unlike(id){
+    const s=getSess();
+    if(REMOTE){await rq(`/rest/v1/script_likes?script_id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(s.id)}`,{method:'DELETE'});return}
+    const all=LS.get('spl_likes',{});all[id]=(all[id]||[]).filter(x=>x!==s.id);LS.set('spl_likes',all);
+  },
+  async comments(id){
+    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at&order=created_at.desc&limit=100`);
+    return LS.get('spl_comments',[]).filter(c=>c.script_id===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  },
+  async addComment(id,body){
+    const s=getSess();
+    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body},headers:{Prefer:'return=representation'}});return r[0]}
+    const all=LS.get('spl_comments',[]);
+    const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,created_at:new Date().toISOString()};
+    all.push(n);LS.set('spl_comments',all);return n;
+  },
+  async removeComment(id){
+    const s=getSess();
+    if(REMOTE){await rq(`/rest/v1/script_comments?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+    LS.set('spl_comments',LS.get('spl_comments',[]).filter(c=>!(c.id===id&&c.user_id===s.id)));
   }
 };
 
@@ -437,7 +489,6 @@ function route(){
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
-document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){const i=$('hQ')||$('q');if(i){e.preventDefault();i.focus()}}});
 
 const home={q:'',sort:'new',key:'all',features:[],executor:'',page:0,items:[],more:false,busy:false,top:[]};
 const ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -552,22 +603,95 @@ async function pageScript(id){
       ${own?'<div class="actions" style="margin:0"><button class="btn sec" id="edBtn">Edit</button><button class="btn danger" id="delBtn">Delete</button></div>':''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
-      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
+      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
       <p class="hint">Uploaded by a user. Read the code and only run what you trust.</p></div>
     <div class="card"><h2>About</h2>${it.description?`<div style="white-space:pre-wrap;color:#d8ccd5">${esc(it.description)}</div>`:'<p class="hint">No description.</p>'}
       ${(it.features||[]).length?`<label>Features</label><div class="chips">${it.features.map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div>`:''}
       ${(it.executors||[]).length?`<label>Tested on</label><div class="chips">${it.executors.map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}</div>`:''}</div></div>
+    <section class="card cmsec"><h2>Comments<span class="cnt" id="cmCount">0</span></h2><div id="cmForm"></div><div class="cmlist" id="cmList"><div class="hint">Loading comments...</div></div></section>
     <div id="related"></div>`;
     $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString()+' characters';
     Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
+    initLikes(it);
+    initComments(it);
     if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
     if(own){
       $('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
       $('delBtn').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');go('mine')}catch(e){toast(e.message,1)}};
     }
   }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
+}
+
+async function initLikes(it){
+  const btn=$('lkBtn');if(!btn)return;
+  let liked=false,count=0,busy=false;
+  const paint=()=>{const b=$('lkBtn');if(!b)return;b.classList.toggle('on',liked);b.querySelector('.n').textContent=fmt(count);b.setAttribute('aria-pressed',String(liked))};
+  try{
+    const l=await DB.likes(it.id),s=getSess();
+    count=l.length;liked=!!s&&l.includes(s.id);
+  }catch(e){}
+  paint();
+  btn.onclick=async()=>{
+    if(!getSess()){toast('Log in to like scripts',1);return}
+    if(busy)return;busy=true;
+    try{
+      if(liked){await DB.unlike(it.id);liked=false;count=Math.max(0,count-1)}
+      else{await DB.like(it.id);liked=true;count++}
+      paint();
+    }catch(e){toast(e.message,1)}
+    busy=false;
+  };
+}
+
+async function initComments(it){
+  const form=$('cmForm');if(!form)return;
+  const s=getSess();
+  let list=[],profs={},posting=false,last=0;
+  if(s){
+    form.innerHTML=`<div class="cmform"><textarea id="cmIn" maxlength="500" placeholder="Write a comment..."></textarea><div class="cmfoot"><span class="hint" id="cmN">0 / 500</span><button type="button" class="btn" id="cmPost">Post comment</button></div><div id="cmMsg"></div></div>`;
+    $('cmIn').addEventListener('input',()=>{$('cmN').textContent=$('cmIn').value.length+' / 500'});
+    $('cmPost').onclick=async()=>{
+      const v=$('cmIn').value.trim(),m=$('cmMsg');
+      if(!v){m.innerHTML='<div class="err">Write something first.</div>';return}
+      if(posting)return;
+      if(Date.now()-last<3000){m.innerHTML='<div class="err">Please wait a moment before posting again.</div>';return}
+      posting=true;$('cmPost').disabled=true;m.innerHTML='';
+      try{
+        const c=await DB.addComment(it.id,v);
+        last=Date.now();
+        const cur=getSess();
+        if(cur&&cur.profile)profs[cur.id]=cur.profile;
+        list.unshift(c);
+        $('cmIn').value='';$('cmN').textContent='0 / 500';
+        draw();
+      }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
+      posting=false;if($('cmPost'))$('cmPost').disabled=false;
+    };
+  }else{
+    form.innerHTML='<p class="hint" style="margin:0 0 6px"><a href="#account" style="color:var(--pink);font-weight:700">Log in</a> to write a comment.</p>';
+  }
+  const draw=()=>{
+    const box=$('cmList');if(!box)return;
+    $('cmCount').textContent=list.length;
+    if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
+    const cur=getSess();
+    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b><small>${esc(timeAgo(c.created_at))}</small>${cur&&cur.id===c.user_id?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Delete this comment?'))return;
+      try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
+    });
+  };
+  try{
+    list=await DB.comments(it.id);
+    if(!$('cmList'))return;
+    draw();
+    profs=await Prof.many([...new Set(list.map(c=>c.user_id))]);
+    draw();
+  }catch(e){
+    if($('cmList'))$('cmList').innerHTML=`<p class="err">Could not load comments: ${esc(e.message)}</p>`;
+  }
 }
 
 let searchSeq=0,searchTimer=null;
@@ -730,6 +854,19 @@ const Prof={
     if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color`);return r[0]||{}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
     return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||''}:{};
+  },
+  async many(ids){
+    const out={};
+    if(!ids.length)return out;
+    if(REMOTE){
+      const ok=ids.filter(isUUID);
+      if(!ok.length)return out;
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color`);r.forEach(p=>out[p.id]=p)}catch(e){}
+      return out;
+    }
+    const all=LS.get('spl_users',{});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||''}});
+    return out;
   },
   async sync(){
     const s=getSess();if(!s)return{};
