@@ -1,1 +1,878 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScriptPlace</title>
+<link rel="icon" type="image/png" href="https://cdn.discordapp.com/attachments/1455257373458432186/1558479033614999672/123.png?ex=6acb9634&amp;is=6aca44b4&amp;hm=982e869b9aea6e6e916226dcaae6f171dcd0afbb6fad09fcbcac9b31e3129bfb">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0e0b0f;--s1:#171318;--s2:#1f1a21;--s3:#2a232d;--line:#2d2630;--text:#f5eff3;--mut:#9d929c;--pink:#ff4d9d;--pinkd:#e22d82;--bad:#ff5a6e;--good:#46d39a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+button,a,.game,.chip{-webkit-touch-callout:none;touch-action:manipulation}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;min-height:100vh;overflow-x:hidden}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.hidden{display:none!important}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:14px 20px;background:var(--bg);border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:22px;letter-spacing:-.5px;margin-right:auto}
+.logo img{height:42px;width:auto;display:block}
+.tools{display:flex;gap:8px}
+.ib{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;text-decoration:none;color:var(--text);transition:background .15s,border-color .15s}
+.ib:hover{background:var(--s2);border-color:var(--s3)}
+.ib svg{width:20px;height:20px}
+.menu{position:absolute;right:12px;top:68px;width:min(300px,calc(100vw - 24px));background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:8px;display:grid;gap:2px;box-shadow:0 18px 40px rgba(0,0,0,.55);animation:mIn .14s ease-out;transform-origin:top right}
+@keyframes mIn{from{opacity:0;transform:scale(.97) translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.menu{animation:none}}
+.mhead{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;text-decoration:none;margin-bottom:6px;background:var(--bg);border:1px solid var(--line)}
+.mhead:hover{border-color:var(--s3)}
+.mhead .mt{min-width:0;display:grid}
+.mhead .mt b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mhead .mt small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu .mi{display:flex;align-items:center;gap:12px;text-decoration:none;padding:11px 12px;border-radius:11px;font-weight:600;font-size:15px;color:var(--mut);position:relative}
+.menu .mi svg{width:20px;height:20px;flex:0 0 auto}
+.menu .mi:hover{background:var(--s2);color:var(--text)}
+.menu .mi.on{background:var(--s2);color:var(--text)}
+.menu .mi.on svg{color:var(--pink)}
+.menu .mi.on:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--pink)}
+.menu .pub{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:6px;padding:12px;border-radius:12px;background:var(--pink);color:#fff;font-weight:700;text-decoration:none}
+.menu .pub svg{width:18px;height:18px}
+.menu .pub:hover{background:var(--pinkd)}
+.mout{margin-top:4px;padding:10px;text-align:center;color:var(--mut);font-weight:600;font-size:14px;border-radius:10px}
+.mout:hover{color:var(--bad)}
+.ib.open{border-color:var(--pink)}
+.ib .i-close{display:none}
+.ib.open .i-close{display:block}
+.ib.open .i-open{display:none}
+.av svg{width:20px;height:20px}
+.wrap{max-width:1140px;margin:0 auto;padding:22px 18px 80px}
+.note{border-left:3px solid var(--pink);background:var(--s1);padding:10px 14px;font-size:13px;color:var(--mut);border-radius:0 8px 8px 0;margin-bottom:16px}
+.sb{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--line);border-radius:99px;padding:6px 6px 6px 18px;transition:border-color .15s}
+.sb:focus-within{border-color:var(--pink)}
+.sb svg{width:22px;height:22px;color:var(--mut);flex:0 0 auto}
+.sb input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:17px;padding:12px 0;outline:none}
+.sb input::placeholder{color:var(--mut)}
+.sb .btn{border-radius:99px;padding:11px 22px}
+.rowh{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rowh h2{margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.rowh h2 svg{width:20px;height:20px;color:var(--pink)}
+.rowh.big{margin-top:30px}
+.rowh h1{margin:0;font-size:34px;letter-spacing:-1px;font-weight:800;line-height:1.1}
+.hot{margin-top:26px}
+.lnk{color:var(--mut);font-size:14px;font-weight:600}
+.lnk:hover{color:var(--text)}
+.hg{display:flex;gap:10px;overflow-x:auto;padding:12px 0 6px;scrollbar-width:none}
+.hg::-webkit-scrollbar{display:none}
+.hg .g{flex:0 0 auto;display:flex;align-items:center;gap:12px;min-width:200px;padding:10px 16px 10px 10px;background:var(--s1);border:1px solid var(--line);border-radius:16px;text-align:left;transition:border-color .15s}
+.hg .g:hover{border-color:var(--s3)}
+.hg .g.on{border-color:var(--pink)}
+.hg .g img{width:46px;height:46px;border-radius:11px;object-fit:cover;background:var(--s3)}
+.hg .g .ph{width:46px;height:46px;border-radius:11px;background:var(--s3)}
+.hg .g b{display:block;font-size:15px;font-weight:700;line-height:1.25}
+.hg .g small{color:var(--mut);font-size:13px}
+.fswrap{position:relative}
+.fs{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:14px;font-weight:600;font-size:15px}
+.fs svg{width:18px;height:18px}
+.fsp{position:absolute;right:0;top:calc(100% + 8px);z-index:10;width:200px;background:var(--s1);border:1px solid var(--line);border-radius:14px;padding:6px;display:grid;gap:2px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.fsp button{text-align:left;padding:10px 12px;border-radius:9px;font-weight:600;font-size:14px;color:var(--mut)}
+.fsp button:hover{background:var(--s2);color:var(--text)}
+.fsp button.on{color:var(--text);background:var(--s2)}
+.fsp button.on:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pink);margin-right:10px}
+.intro{color:var(--mut);font-size:17px;line-height:1.75;max-width:760px;margin:18px 0 16px}
+.intro u{text-decoration-color:var(--s3);text-decoration-thickness:2px;text-underline-offset:5px;color:var(--text)}
+.intro .lnk{font-size:inherit;color:var(--text);text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:5px;font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--line);padding:9px 16px;border-radius:99px;font-size:14px;font-weight:600;user-select:none;transition:border-color .15s}
+.chip:hover{border-color:var(--s3)}
+.chip.on{background:var(--pink);border-color:var(--pink);color:#fff}
+.feed{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:22px}
+.sc{background:var(--s1);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .15s}
+a.sc:hover{border-color:var(--pink)}
+.sc .th{aspect-ratio:16/10;background:var(--s3) center/cover no-repeat;position:relative}
+.sc .vw,.sc .ago{position:absolute;top:10px;background:rgba(14,11,15,.82);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.sc .vw{left:10px}
+.sc .ago{right:10px;font-weight:600;color:var(--mut)}
+.sc .vw svg{width:14px;height:14px}
+.sc .bd{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1}
+.sc .gn{font-size:13px;color:var(--pink);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc b{font-size:17px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:700}
+.sc .by{color:var(--mut);font-size:13px}
+.sc .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--s2);color:var(--mut)}
+.badge.k{background:rgba(255,77,157,.14);color:var(--pink)}
+.badge.f{background:rgba(70,211,154,.12);color:var(--good)}
+.badge.p{background:rgba(245,184,75,.14);color:#f5b84b}
+.badge.x{background:var(--s3);color:var(--text)}
+.sk{border-radius:16px;height:290px;background:linear-gradient(100deg,var(--s1) 30%,var(--s2) 50%,var(--s1) 70%);background-size:300% 100%;animation:sh 1.4s infinite;border:1px solid var(--line)}
+@keyframes sh{to{background-position:-300% 0}}
+@media(prefers-reduced-motion:reduce){.sk{animation:none}html{scroll-behavior:auto}}
+.empty{text-align:center;color:var(--mut);padding:50px 10px}
+.empty h3{color:var(--text);margin:0 0 6px;font-size:20px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card h2{margin:0 0 12px;font-size:18px;font-weight:700}
+.grid2{display:grid;gap:18px;grid-template-columns:1.25fr 1fr;align-items:start}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.rowh h1{font-size:28px}}
+.step{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.step i{font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--pink);color:var(--pink);font-weight:800;font-size:14px}
+.step h2{margin:0}
+label{display:block;font-size:13px;color:var(--mut);margin:14px 0 6px;font-weight:600}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 13px;font:inherit;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--pink)}
+input[type=checkbox]{width:auto;margin-right:8px;accent-color:var(--pink)}
+textarea{resize:vertical;min-height:120px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.btn{background:var(--pink);color:#fff;border-radius:10px;padding:11px 18px;font-weight:700;text-decoration:none;display:inline-block;transition:background .15s;text-align:center}
+.btn:hover{background:var(--pinkd)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.sec{background:var(--s2);border:1px solid var(--line);color:var(--text)}
+.btn.sec:hover{border-color:var(--pink);background:var(--s2)}
+.btn.danger{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+.btn.danger:hover{background:var(--bad);color:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1}.row>.btn{flex:0 0 auto}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.hint{font-size:12px;color:var(--mut);margin-top:8px}
+.err{color:var(--bad);font-size:13px;margin-top:8px}
+.good{color:var(--good);font-size:13px;margin-top:8px}
+.gsearch{position:relative}
+.gsearch input{padding:13px 16px;font-size:16px;border-radius:12px}
+.spin{position:absolute;right:16px;top:50%;width:18px;height:18px;margin-top:-9px;border:2px solid var(--line);border-top-color:var(--pink);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.results{display:grid;gap:8px;margin-top:10px;max-height:340px;overflow:auto}
+.game{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--bg);transition:border-color .15s}
+.game:hover{border-color:var(--pink)}
+.game img{width:54px;height:54px;border-radius:10px;background:var(--s3);object-fit:cover}
+.game b{display:block;font-size:15px}
+.game small{color:var(--mut)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sugg .chip{font-size:13px;padding:6px 12px;cursor:pointer}
+.sel{display:flex;gap:16px;align-items:center;padding:14px;border:1px solid var(--pink);border-radius:14px;background:var(--bg)}
+.sel img{width:72px;height:72px;border-radius:12px;object-fit:cover;background:var(--s3)}
+.sel .t{flex:1;min-width:0}
+.sel b{font-size:18px;display:block}
+.dhero{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.dhero img.ic{width:100px;height:100px;border-radius:20px;object-fit:cover;background:var(--s3)}
+.dhero h1{margin:0;font-size:32px;letter-spacing:-.8px;line-height:1.15}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:12px}
+.facts div small{display:block;color:var(--mut);font-size:12px;font-weight:600}
+.facts div b{font-size:15px}
+.code{background:#09070a;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:8px}
+.code .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--s1);font-size:12px;color:var(--mut)}
+.code pre{margin:0;padding:14px;font-size:13px;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Consolas,monospace;max-height:380px;overflow:auto}
+.item{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);margin-top:10px;flex-wrap:wrap}
+.item img{width:56px;height:56px;border-radius:10px;background:var(--s3);object-fit:cover}
+.item .meta{flex:1;min-width:140px}
+.item .meta b{display:block}
+.item .meta small{color:var(--mut)}
+.avatar{width:72px;height:72px;border-radius:50%;background:var(--pink);display:grid;place-items:center;font-size:30px;font-weight:800}
+.mstats{display:flex;gap:30px;margin:14px 0 18px}
+.mstats b{display:block;font-size:26px;font-weight:800}
+.mstats span{color:var(--mut);font-size:13px}
+.sticky{position:sticky;top:84px}
+.join{padding:26px 0 6px}
+.ib{overflow:hidden}
+.ib img{width:100%;height:100%;object-fit:cover}
+.av{display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;font-weight:800;color:#fff;flex:0 0 auto;line-height:1}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.who{display:inline-flex;align-items:center;gap:8px}
+.btn.fs{display:inline-flex;align-items:center;gap:10px}
+.fs svg{width:18px;height:18px}
+.fs .fcount{background:var(--pink);color:#fff;border-radius:99px;font-size:12px;font-weight:800;min-width:20px;height:20px;display:grid;place-items:center;padding:0 6px}
+.fs .chev{transition:transform .15s}
+.fs.open .chev{transform:rotate(180deg)}
+.fp{background:var(--s1);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-top:16px;display:grid;gap:18px}
+.fgrp{display:grid;gap:8px}
+.fl{font-size:13px;font-weight:700;color:var(--mut)}
+.seg2{display:inline-flex;justify-self:start;flex-wrap:wrap;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px;max-width:100%}
+.seg2 button{padding:8px 16px;border-radius:9px;font-weight:600;font-size:14px;color:var(--mut)}
+.seg2 button:hover{color:var(--text)}
+.seg2 button.on{background:var(--pink);color:#fff}
+.fpfoot{display:flex;justify-content:flex-end}
+#active:not(:empty){margin-top:14px}
+.chip.rm svg{width:12px;height:12px}
+.prof{background:var(--s1);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:18px}
+.pban{height:110px}
+.pbody{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;padding:0 24px 22px}
+#pAv{margin-top:-48px;border:4px solid var(--s1);border-radius:50%;display:flex}
+.pinfo{flex:1;min-width:200px;padding-top:12px}
+.pinfo h1{margin:0;font-size:28px;letter-spacing:-.6px;line-height:1.2}
+.pbio{margin:8px 0 0;color:#d8ccd5;max-width:520px;white-space:pre-wrap}
+.pbio:empty{display:none}
+.plink{display:inline-block;margin-top:10px;font-size:14px;font-weight:600;color:var(--pink);text-decoration:none}
+.plink:hover{text-decoration:underline}
+.pstats{display:flex;gap:26px;padding-top:14px}
+.pstats b{display:block;font-size:20px;font-weight:800}
+.pstats span{color:var(--mut);font-size:12px}
+.avrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatches button{width:32px;height:32px;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 3px var(--s1)}
+.swatches button.on{border-color:var(--text)}
+.grid2.eq{grid-template-columns:1fr 1fr}
+@media(max-width:900px){.grid2.eq{grid-template-columns:1fr}}
+.join h1{font-size:38px;margin:0 0 8px;letter-spacing:-1px}
+.join p{color:var(--mut);margin:0 0 6px;max-width:520px}
+#pAv .av{box-shadow:0 0 0 0 transparent}
+.pban{height:84px}
+.pbody{display:grid;grid-template-columns:auto 1fr;gap:0 20px;align-items:end;padding:0 24px 22px}
+#pAv{margin-top:-44px}
+.pinfo{padding-top:14px;min-width:0}
+.pinfo h1{font-size:26px}
+.pstats{grid-column:1/-1;gap:0;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.pstats div{flex:1}
+.pstats div+div{padding-left:20px;border-left:1px solid var(--line)}
+.aved{display:flex;gap:18px;align-items:center;padding:16px;background:var(--bg);border:1px solid var(--line);border-radius:14px}
+.avbtn{position:relative;border-radius:50%;display:block;flex:0 0 auto}
+.avbtn .cam{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:50%;background:var(--pink);display:grid;place-items:center;border:3px solid var(--bg)}
+.avbtn .cam svg{width:14px;height:14px;color:#fff}
+.avbtn:hover .av{filter:brightness(.8)}
+.avtxt b{display:block;font-size:15px}
+.avtxt .hint{margin:2px 0 0}
+.avact{display:flex;gap:16px;margin-top:10px}
+.avact .lnk{font-weight:700;font-size:14px}
+.avact .up{color:var(--pink)}
+.avact .dn{color:var(--bad)}
+.swatches button{width:28px;height:28px}
+.mysec{margin-top:36px}
+.mysec .rowh{flex-wrap:wrap}
+.mysec .rowh h2{font-size:22px;letter-spacing:-.4px}
+.mysec .cnt{color:var(--mut);font-weight:600;font-size:15px}
+.rowact{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mc{display:flex;flex-direction:column;gap:8px}
+.mc .sc{flex:1}
+.mcact{display:flex;gap:8px}
+.mcact .btn{flex:1;padding:9px 12px;font-size:14px}
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99;display:grid;gap:8px;justify-items:center}
+.toast{background:var(--s3);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600}
+.toast.bad{border-color:var(--bad)}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:30px 20px}
+</style>
+<script>
+window.SCRIPTPLACE_CONFIG={
+  SUPABASE_URL:'https://mpepfitgynghzqwnqnhb.supabase.co',
+  SUPABASE_ANON_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZXBmaXRneW5naHpxd25xbmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0OTc2MTMsImV4cCI6MjA5OTA3MzYxM30.uMAHZYntPzCGOvlU8jH0WHydox4o4pIrkH9wJFlhUco'
+};
+</script>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="#home"><img src="https://cdn.discordapp.com/attachments/1455257373458432186/1558479033614999672/123.png?ex=6acb9634&amp;is=6aca44b4&amp;hm=982e869b9aea6e6e916226dcaae6f171dcd0afbb6fad09fcbcac9b31e3129bfb" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'"><span>ScriptPlace</span></a>
+  <div class="tools">
+    <button class="ib" id="tSearch" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <a class="ib" id="tAcc" href="#account" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></a>
+    <button class="ib" id="tMenu" aria-label="Menu"><svg class="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <nav class="menu hidden" id="menu">
+    <a class="mhead" href="#account" id="mHead"></a>
+    <a class="mi" href="#home" data-p="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+    <a class="mi" href="#mine" data-p="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>My scripts</a>
+    <a class="mi" href="#account" data-p="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><span id="navAcc">Login</span></a>
+    <a class="pub" href="#publish" data-p="publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Publish a script</a>
+    <button type="button" class="mout hidden" id="mOut">Log out</button>
+  </nav>
+</header>
+<div class="wrap" id="app"></div>
+<div id="toasts"></div>
+<footer>ScriptPlace is not affiliated with Roblox. Scripts belong to their authors. Review code before you run it.</footer>
+
+<script>
+const CFG=window.SCRIPTPLACE_CONFIG,REMOTE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
+const PROXY={games:'https://games.roproxy.com',apis:'https://apis.roproxy.com',thumbs:'https://thumbnails.roproxy.com'};
+const PRESETS=['Auto Farm','Auto Hatch','Auto Sell','Auto Collect','Auto Buy','Anti AFK','Teleport','Speed Boost','ESP','Infinite Jump','GUI','Kill Aura','Auto Quest'];
+const EXECUTORS=['Potassium','Matcha','Xeno','Bunni.lol','Photon','Synapse Z','AWP.GG','Wave','Volcano','Velocity','Seliware','Solara','Codex','Delta','Arceus X','Ronix','Zenith'];
+const SUGG=['Blox Fruits','Brookhaven','Adopt Me','Grow a Garden','Steal a Brainrot','Murder Mystery 2','Pet Simulator 99','Fisch','Arsenal','Doors'];
+const PAGE=12;
+const ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const $=id=>document.getElementById(id);
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl=u=>/^https:\/\//i.test(u||'')?u:'';
+const go=p=>{location.hash=p};
+const getSess=()=>LS.get('spl_sess',null);
+const fmt=n=>{n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
+function timeAgo(d){
+  if(!d)return 'just now';
+  const s=(Date.now()-new Date(d).getTime())/1000;
+  if(s<60)return 'just now';
+  if(s<3600)return Math.floor(s/60)+'min ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  if(s<2592000)return Math.floor(s/86400)+'d ago';
+  return new Date(d).toLocaleDateString();
+}
+function toast(m,bad){const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.textContent=m;$('toasts').appendChild(t);setTimeout(()=>t.remove(),2600)}
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function copy(t,label){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(label||'Copied to clipboard')}
+async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
+async function icons(ids){if(!ids.length)return{};try{const d=await getJSON(`${PROXY.thumbs}/v1/games/icons?universeIds=${ids.join(',')}&size=256x256&format=Png&isCircular=false`);const m={};d.data.forEach(x=>m[x.targetId]=x.imageUrl);return m}catch(e){return{}}}
+const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',access:'free',executors:[],editId:null,rules:false});
+let draft=Object.assign(fresh(),LS.get('spl_draft',{}));
+if(draft.key==='yes'&&draft.access==='free')draft.access='key';
+delete draft.key;
+const saveDraft=()=>LS.set('spl_draft',draft);
+const isUUID=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'');
+if(REMOTE){
+  const _s=getSess();if(_s&&!_s.token)LS.set('spl_sess',null);
+  if(draft.editId&&!isUUID(draft.editId)){draft=fresh();saveDraft()}
+  if(location.hash.startsWith('#script/')&&!isUUID(location.hash.slice(8)))location.hash='home';
+}
+
+async function rq(path,{method='GET',body,headers={},auth=true,retry=true}={}){
+  const s=getSess();
+  const h={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json',Authorization:'Bearer '+((auth&&s&&s.token)||CFG.SUPABASE_ANON_KEY),...headers};
+  const r=await fetch(CFG.SUPABASE_URL.replace(/\/$/,'')+path,{method,headers:h,body:body?JSON.stringify(body):undefined});
+  if(r.status===401&&retry&&auth&&s&&s.refresh&&await refreshTok())return rq(path,{method,body,headers,auth,retry:false});
+  if(!r.ok){let m='HTTP '+r.status;try{const j=await r.json();m=j.msg||j.message||j.error_description||j.error||m}catch(e){}throw new Error(m)}
+  const t=await r.text();return t?JSON.parse(t):null;
+}
+async function refreshTok(){const s=getSess();try{const j=await rq('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:s.refresh},auth:false,retry:false});LS.set('spl_sess',{...s,token:j.access_token,refresh:j.refresh_token});return true}catch(e){LS.set('spl_sess',null);return false}}
+const sessFrom=j=>({id:j.user.id,email:j.user.email,username:(j.user.user_metadata&&j.user.user_metadata.username)||j.user.email.split('@')[0],created:j.user.created_at,token:j.access_token,refresh:j.refresh_token});
+
+const Auth={
+  async register(email,username,password){
+    if(REMOTE){
+      const j=await rq('/auth/v1/signup',{method:'POST',body:{email,password,data:{username}},auth:false});
+      if(j&&j.access_token){LS.set('spl_sess',sessFrom(j));return 'ok'}
+      return 'confirm';
+    }
+    const all=LS.get('spl_users',{}),k=email.toLowerCase();
+    if(all[k])throw new Error('Email already registered');
+    if(Object.values(all).some(u=>u.username.toLowerCase()===username.toLowerCase()))throw new Error('Username already taken');
+    const salt=crypto.randomUUID();all[k]={email:k,username,salt,hash:await sha(salt+password),created:Date.now()};
+    LS.set('spl_users',all);LS.set('spl_sess',{id:k,email:k,username,created:all[k].created});return 'ok';
+  },
+  async login(email,password){
+    if(REMOTE){const j=await rq('/auth/v1/token?grant_type=password',{method:'POST',body:{email,password},auth:false});LS.set('spl_sess',sessFrom(j));return}
+    const u=LS.get('spl_users',{})[email.toLowerCase()];
+    if(!u||await sha(u.salt+password)!==u.hash)throw new Error('Wrong email or password');
+    LS.set('spl_sess',{id:u.email,email:u.email,username:u.username,created:u.created});
+  },
+  logout(){LS.set('spl_sess',null)},
+  async changePassword(oldP,newP){
+    if(REMOTE){await rq('/auth/v1/user',{method:'PUT',body:{password:newP}});return}
+    const s=getSess(),all=LS.get('spl_users',{}),u=all[s.id];
+    if(await sha(u.salt+oldP)!==u.hash)throw new Error('Current password is wrong');
+    u.salt=crypto.randomUUID();u.hash=await sha(u.salt+newP);LS.set('spl_users',all);
+  }
+};
+
+const DB={
+  async list({q='',sort='new',page=0,key='all',features=[],executor=''}){
+    const hasF=features.length>0||!!executor;
+    const match=x=>features.every(f=>(x.features||[]).includes(f))&&(!executor||(x.executors||[]).includes(executor));
+    const keyOk=x=>key==='all'||(key==='no'&&!x.key_system&&!x.paid)||(key==='yes'&&!!x.key_system)||(key==='paid'&&!!x.paid);
+    if(REMOTE){
+      let p=`/rest/v1/scripts?select=id,title,game_name,icon,features,executors,key_system,paid,views,author,created_at&order=${sort==='top'?'views.desc':'created_at.desc'}`;
+      p+=hasF?'&limit=400':`&limit=${PAGE+1}&offset=${page*PAGE}`;
+      const c=q.replace(/[,()*%]/g,' ').trim();
+      if(c)p+=`&or=(title.ilike.*${encodeURIComponent(c)}*,game_name.ilike.*${encodeURIComponent(c)}*)`;
+      if(key==='no')p+='&key_system=eq.false&paid=eq.false';
+      if(key==='yes')p+='&key_system=eq.true';
+      if(key==='paid')p+='&paid=eq.true';
+      let rows=await rq(p);
+      if(hasF){rows=rows.filter(match);return{items:rows.slice(page*PAGE,page*PAGE+PAGE),more:rows.length>page*PAGE+PAGE}}
+      return{items:rows.slice(0,PAGE),more:rows.length>PAGE};
+    }
+    let a=LS.get('spl_scripts',[]);const c=q.toLowerCase().trim();
+    if(c)a=a.filter(x=>(x.title+' '+(x.game_name||'')).toLowerCase().includes(c));
+    a=a.filter(keyOk);
+    if(hasF)a=a.filter(match);
+    a=[...a].sort((x,y)=>sort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at));
+    return{items:a.slice(page*PAGE,page*PAGE+PAGE),more:a.length>page*PAGE+PAGE};
+  },
+  async stats(){
+    const rows=REMOTE?await rq('/rest/v1/scripts?select=views,game_name,icon,key_system,paid&limit=1000'):LS.get('spl_scripts',[]);
+    const games={};rows.forEach(r=>{if(!r.game_name)return;const g=games[r.game_name]||(games[r.game_name]={name:r.game_name,icon:r.icon,n:0});g.n++;});
+    return{scripts:rows.length,views:rows.reduce((a,r)=>a+(r.views||0),0),keyless:rows.filter(r=>!r.key_system&&!r.paid).length,games:Object.keys(games).length,top:Object.values(games).sort((a,b)=>b.n-a.n).slice(0,12)};
+  },
+  async get(id){
+    if(REMOTE){if(!isUUID(id))return null;const r=await rq(`/rest/v1/scripts?id=eq.${encodeURIComponent(id)}&select=*`);return r[0]||null}
+    return LS.get('spl_scripts',[]).find(x=>x.id===id)||null;
+  },
+  async mine(){
+    const s=getSess();if(!s)return[];
+    if(REMOTE)return rq(`/rest/v1/scripts?user_id=eq.${encodeURIComponent(s.id)}&select=id,title,game_name,icon,features,executors,key_system,paid,views,created_at&order=created_at.desc`);
+    return LS.get('spl_scripts',[]).filter(x=>x.user_id===s.id).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+  },
+  async save(item,id){
+    const s=getSess();
+    if(REMOTE){
+      if(id&&!isUUID(id))throw new Error('This script is from an old demo session and cannot be edited.');
+      if(id){const r=await rq(`/rest/v1/scripts?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:item,headers:{Prefer:'return=representation'}});if(!r||!r[0])throw new Error('Not allowed');return r[0]}
+      const r=await rq('/rest/v1/scripts',{method:'POST',body:{...item,user_id:s.id,author:s.username},headers:{Prefer:'return=representation'}});return r[0];
+    }
+    const all=LS.get('spl_scripts',[]);
+    if(id){const i=all.findIndex(x=>x.id===id&&x.user_id===s.id);if(i<0)throw new Error('Not allowed');all[i]={...all[i],...item};LS.set('spl_scripts',all);return all[i]}
+    const n={...item,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),user_id:s.id,author:s.username,views:0,created_at:new Date().toISOString()};
+    all.unshift(n);LS.set('spl_scripts',all);return n;
+  },
+  async remove(id){
+    const s=getSess();
+    if(REMOTE){await rq(`/rest/v1/scripts?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+    LS.set('spl_scripts',LS.get('spl_scripts',[]).filter(x=>!(x.id===id&&x.user_id===s.id)));
+  },
+  async view(id){
+    try{
+      if(sessionStorage.getItem('v_'+id))return;sessionStorage.setItem('v_'+id,'1');
+      if(REMOTE){await rq('/rest/v1/rpc/increment_views',{method:'POST',body:{sid:id}});return}
+      const all=LS.get('spl_scripts',[]),i=all.findIndex(x=>x.id===id);if(i>=0){all[i].views=(all[i].views||0)+1;LS.set('spl_scripts',all)}
+    }catch(e){}
+  }
+};
+
+function closeMenu(){$('menu').classList.add('hidden');$('tMenu').classList.remove('open')}
+$('tMenu').onclick=e=>{e.stopPropagation();const o=!$('menu').classList.toggle('hidden');$('tMenu').classList.toggle('open',o)};
+$('mOut').onclick=()=>{Auth.logout();toast('Logged out');route()};
+$('menu').onclick=e=>{if(e.target.closest('a,button'))closeMenu()};
+document.addEventListener('click',e=>{if(!e.target.closest('#menu'))closeMenu()});
+$('tSearch').onclick=()=>{go('home');setTimeout(()=>{const i=$('hQ');if(i){i.focus();i.scrollIntoView({block:'center'})}},60)};
+
+function route(){
+  const h=location.hash.slice(1)||'home',[p,arg]=h.split('/');
+  document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
+  const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
+  closeMenu();
+  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg)}[p]||pageHome)();
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){const i=$('hQ')||$('q');if(i){e.preventDefault();i.focus()}}});
+
+const home={q:'',sort:'new',key:'all',features:[],executor:'',page:0,items:[],more:false,busy:false,top:[]};
+const ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
+const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
+function cardHTML(it,link=true){
+  const img=safeUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
+  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${esc(it.author||'you')}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
+}
+const fcount=()=>(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
+function syncFilters(){
+  if(!$('fp'))return;
+  document.querySelectorAll('#sSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===home.sort));
+  document.querySelectorAll('#sKey button').forEach(b=>b.classList.toggle('on',b.dataset.v===home.key));
+  const ff=$('fFeat');ff.innerHTML='';
+  PRESETS.forEach(f=>{
+    const c=document.createElement('button');c.type='button';c.className='chip'+(home.features.includes(f)?' on':'');c.textContent=f;
+    c.onclick=()=>{home.features=home.features.includes(f)?home.features.filter(x=>x!==f):[...home.features,f];syncFilters();homeLoad(true)};
+    ff.appendChild(c);
+  });
+  const fe=$('fExec');fe.innerHTML='';
+  EXECUTORS.forEach(x=>{
+    const c=document.createElement('button');c.type='button';c.className='chip'+(home.executor===x?' on':'');c.textContent=x;
+    c.onclick=()=>{home.executor=home.executor===x?'':x;syncFilters();homeLoad(true)};
+    fe.appendChild(c);
+  });
+  const n=fcount(),cb=$('fcount');cb.textContent=n;cb.classList.toggle('hidden',!n);
+  const act=[];
+  if(home.sort==='top')act.push(['sort','Most viewed']);
+  if(home.key==='no')act.push(['key','Keyless']);
+  if(home.key==='yes')act.push(['key','Key system']);
+  if(home.key==='paid')act.push(['key','Paid']);
+  if(home.executor)act.push(['exec','Tested on '+home.executor]);
+  home.features.forEach(f=>act.push(['f:'+f,f]));
+  $('active').innerHTML=act.map(([k,l])=>`<button type="button" class="chip on rm" data-k="${esc(k)}">${esc(l)}${ICON_X}</button>`).join('');
+  $('active').querySelectorAll('.rm').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k;
+    if(k==='sort')home.sort='new';else if(k==='key')home.key='all';else if(k==='exec')home.executor='';else home.features=home.features.filter(x=>'f:'+x!==k);
+    syncFilters();homeLoad(true);
+  });
+}
+function pageHome(){
+  $('app').innerHTML=`
+  ${REMOTE?'':'<div class="note">Demo mode: scripts are saved only in this browser. Connect Supabase (see supabase-setup.sql) so everyone sees the same scripts.</div>'}
+  <div class="sb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="hQ" placeholder="Search scripts or games" autocomplete="off"><button class="btn sec" id="hGo">Go</button></div>
+  <div class="hot hidden" id="hot"><div class="rowh"><h2><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-2 5-2 8 0 1 .6 2 1.5 2.4C10 13 9 14.5 9 16a3 3 0 0 0 6 0c0-2-1-3-1-4.5 2 .5 4 2.5 4 5.5a6 6 0 0 1-12 0c0-4 4-6 6-15z"/></svg>Hot games</h2><button class="lnk" id="hAll">Show all</button></div><div class="hg" id="gChips"></div></div>
+  <div class="rowh big"><h1 id="hTitle">Latest scripts</h1>
+    <button class="btn sec fs" id="fsBtn" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Filters<span class="fcount hidden" id="fcount"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+  <p class="intro" id="intro">Open a script, copy its loadstring and run it in your executor.</p>
+  <div class="fp hidden" id="fp">
+    <div class="fgrp"><span class="fl">Sort by</span><div class="seg2" id="sSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div></div>
+    <div class="fgrp"><span class="fl">Key</span><div class="seg2" id="sKey"><button data-v="all">All</button><button data-v="no">Keyless</button><button data-v="yes">Key system</button><button data-v="paid">Paid</button></div></div>
+    <div class="fgrp"><span class="fl">Tested on</span><div class="chips" id="fExec"></div></div>
+    <div class="fgrp"><span class="fl">Features</span><div class="chips" id="fFeat"></div></div>
+    <div class="fpfoot"><button class="lnk" id="fReset">Reset filters</button></div>
+  </div>
+  <div class="chips" id="active"></div>
+  <div id="hStatus" class="hint"></div><div class="feed" id="hGrid"></div>
+  <div class="actions" style="justify-content:center"><button class="btn sec hidden" id="hMore">Load more</button></div>`;
+  $('hQ').value=home.q;
+  const run=()=>{home.q=$('hQ').value.trim();syncGames();homeLoad(true)};
+  $('hGo').onclick=run;$('hQ').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
+  $('fsBtn').onclick=()=>{const o=$('fp').classList.toggle('hidden');$('fsBtn').classList.toggle('open',!o);$('fsBtn').setAttribute('aria-expanded',String(!o))};
+  document.querySelectorAll('#sSort button').forEach(b=>b.onclick=()=>{home.sort=b.dataset.v;syncFilters();homeLoad(true)});
+  document.querySelectorAll('#sKey button').forEach(b=>b.onclick=()=>{home.key=b.dataset.v;syncFilters();homeLoad(true)});
+  $('fReset').onclick=()=>{home.sort='new';home.key='all';home.executor='';home.features=[];syncFilters();homeLoad(true)};
+  $('hAll').onclick=()=>{home.q='';$('hQ').value='';syncGames();homeLoad(true)};
+  $('hMore').onclick=()=>{home.page++;homeLoad(false)};
+  if(fcount()){$('fp').classList.remove('hidden');$('fsBtn').classList.add('open');$('fsBtn').setAttribute('aria-expanded','true')}
+  syncFilters();
+  DB.stats().then(st=>{
+    if(!$('intro'))return;
+    home.top=st.top;
+    $('intro').innerHTML=`<u>${fmt(st.scripts)} free Roblox scripts</u> for <u>${fmt(st.games)} games</u>, shared by the community with <u>${fmt(st.views)} total views</u> and <button class="lnk" id="kLink">${fmt(st.keyless)} keyless</button>. Open a script, copy its loadstring and run it in your executor.`;
+    $('kLink').onclick=()=>{home.key='no';syncFilters();homeLoad(true)};
+    renderGameChips();
+  }).catch(()=>{});
+  homeLoad(true);
+}
+function syncGames(){document.querySelectorAll('#gChips .g').forEach(c=>c.classList.toggle('on',!!home.q&&c.dataset.g===home.q))}
+function renderGameChips(){
+  const box=$('gChips'),top=home.top;if(!box||!top.length)return;
+  $('hot').classList.remove('hidden');
+  box.innerHTML=top.map(g=>`<button class="g" data-g="${esc(g.name)}">${g.icon?`<img src="${esc(safeUrl(g.icon))}" alt="">`:'<span class="ph"></span>'}<span><b>${esc(g.name)}</b><small>${g.n} ${g.n===1?'script':'scripts'}</small></span></button>`).join('');
+  box.querySelectorAll('.g').forEach(c=>c.onclick=()=>{home.q=c.dataset.g;$('hQ').value=home.q;syncGames();homeLoad(true)});
+  syncGames();
+}
+async function homeLoad(reset){
+  if(home.busy)return;home.busy=true;
+  const grid=$('hGrid');if(!grid){home.busy=false;return}
+  if(reset){home.page=0;home.items=[];grid.innerHTML='<div class="sk"></div>'.repeat(4)}
+  $('hTitle').textContent=home.q?`Results for "${home.q}"`:(home.sort==='top'?'Most viewed scripts':'Latest scripts');
+  const st=$('hStatus');st.className='hint';st.textContent='';
+  try{
+    const r=await DB.list(home);home.items.push(...r.items);home.more=r.more;
+    grid.innerHTML=home.items.length?home.items.map(it=>cardHTML(it)).join(''):`<div class="empty" style="grid-column:1/-1"><h3>${home.q||fcount()?'No scripts found':'No scripts yet'}</h3>${home.q||fcount()?'Try another keyword or reset the filters.':'Publish the first one.'}<div class="actions" style="justify-content:center">${fcount()?'<button class="btn sec" id="emptyReset">Reset filters</button>':'<a class="btn" href="#publish">Publish a script</a>'}</div></div>`;
+    const er=$('emptyReset');if(er)er.onclick=()=>$('fReset').click();
+    $('hMore').classList.toggle('hidden',!home.more);
+  }catch(e){grid.innerHTML='';st.className='err';st.textContent='Could not load scripts: '+e.message}
+  home.busy=false;
+}
+
+async function pageScript(id){
+  $('app').innerHTML='<div class="sk" style="height:200px"></div>';
+  try{
+    const it=await DB.get(id);
+    if(!it){$('app').innerHTML='<div class="card empty"><h3>Script not found</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
+    DB.view(id);
+    const s=getSess(),own=s&&s.id===it.user_id,img=safeUrl(it.icon),link=safeUrl(it.link);
+    $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString()}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      ${own?'<div class="actions" style="margin:0"><button class="btn sec" id="edBtn">Edit</button><button class="btn danger" id="delBtn">Delete</button></div>':''}</div>
+    <div class="grid2"><div class="card"><h2>Script</h2>
+      <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
+      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
+      <p class="hint">Uploaded by a user. Read the code and only run what you trust.</p></div>
+    <div class="card"><h2>About</h2>${it.description?`<div style="white-space:pre-wrap;color:#d8ccd5">${esc(it.description)}</div>`:'<p class="hint">No description.</p>'}
+      ${(it.features||[]).length?`<label>Features</label><div class="chips">${it.features.map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div>`:''}
+      ${(it.executors||[]).length?`<label>Tested on</label><div class="chips">${it.executors.map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}</div>`:''}</div></div>
+    <div id="related"></div>`;
+    $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString()+' characters';
+    Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'}).catch(()=>{});
+    $('cpBtn').onclick=()=>copy(it.code,'Script copied');
+    $('shBtn').onclick=()=>copy(location.href,'Link copied');
+    if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
+    if(own){
+      $('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
+      $('delBtn').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');go('mine')}catch(e){toast(e.message,1)}};
+    }
+  }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
+}
+
+let searchSeq=0,searchTimer=null;
+function pagePublish(){
+  if(!getSess()){$('app').innerHTML=`<div class="card empty"><h3>Log in to publish</h3>You need a free account to upload scripts.<div class="actions" style="justify-content:center"><a class="btn" href="#account">Login or register</a></div></div>`;return}
+  $('app').innerHTML=`<div class="rowh" style="margin-bottom:16px"><h1 style="margin:0;font-size:30px;letter-spacing:-.8px">${draft.editId?'Edit script':'Publish a script'}</h1></div>
+  <div class="grid2"><div style="display:grid;gap:18px">
+    <section class="card"><div class="step"><i>1</i><h2>Pick the game</h2></div>
+      <div id="gameArea"></div></section>
+    <section class="card"><div class="step"><i>2</i><h2>Details</h2></div>
+      <label>Title</label><input id="title" maxlength="80" placeholder="e.g. Blox Fruits Auto Farm | No Key">
+      <label>Description</label><textarea id="desc" style="min-height:90px;font-family:inherit" maxlength="2000" placeholder="What does it do? How do you use it?"></textarea>
+      <label>Features</label>
+      <div class="row"><input id="featIn" placeholder="Add your own, press Enter"><button class="btn sec" id="featAdd">Add</button></div>
+      <div class="chips" id="featChips" style="margin-top:10px"></div>
+      <label>Tested executors</label><div class="chips" id="execChips"></div>
+      <div class="row"><div><label>Access</label><select id="access"><option value="free">Keyless</option><option value="key">Key system</option><option value="paid">Paid</option></select></div>
+      <div><label>Discord or community link (https)</label><input id="link" placeholder="https://discord.gg/..."></div></div></section>
+    <section class="card"><div class="step"><i>3</i><h2>Script</h2></div>
+      <textarea id="code" placeholder='loadstring(game:HttpGet("https://raw.githubusercontent.com/..."))()'></textarea>
+      <div class="hint" id="codeInfo"></div>
+      <div class="row" style="margin-top:8px"><input id="raw" placeholder="Or paste a raw link to turn it into a loadstring"><button class="btn sec" id="lsBtn">Build loadstring</button></div>
+      <label style="margin-top:18px;display:flex;align-items:flex-start"><input type="checkbox" id="rules" style="margin-top:3px"><span>My script contains no malware, token or cookie stealers, IP loggers or backdoors, and I have the right to share it.</span></label>
+      <div class="actions"><button class="btn" id="pubBtn">${draft.editId?'Save changes':'Publish'}</button><button class="btn sec" id="clearBtn">Clear form</button></div>
+      <div id="pubMsg"></div></section>
+  </div>
+  <div class="sticky"><div class="card"><h2>Preview</h2><div id="preview"></div><p class="hint">This is how your script appears in the feed.</p></div></div></div>`;
+  $('title').value=draft.title;$('desc').value=draft.description;$('code').value=draft.code;$('link').value=draft.link;$('access').value=draft.access;$('rules').checked=!!draft.rules;
+  renderGameArea();renderChips();renderExec();renderPreview();codeInfo();
+  [['title','title'],['desc','description'],['code','code'],['link','link'],['access','access']].forEach(([i,k])=>$(i).addEventListener('input',()=>{draft[k]=$(i).value;saveDraft();renderPreview();if(i==='code')codeInfo()}));
+  $('rules').onchange=()=>{draft.rules=$('rules').checked;saveDraft()};
+  $('featAdd').onclick=addFeat;$('featIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addFeat()}});
+  $('lsBtn').onclick=()=>{const u=$('raw').value.trim();if(!safeUrl(u)){toast('Raw link must start with https://',1);return}$('code').value=`loadstring(game:HttpGet("${u}"))()`;draft.code=$('code').value;saveDraft();renderPreview();codeInfo()};
+  $('pubBtn').onclick=publish;
+  $('clearBtn').onclick=()=>{draft=fresh();saveDraft();pagePublish()};
+}
+function codeInfo(){const el=$('codeInfo');if(el)el.textContent=draft.code?`${draft.code.split('\n').length} lines, ${draft.code.length.toLocaleString()} characters`:''}
+function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:g?g.icon:'',views:0,author:s?s.username:'you',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
+function addFeat(){const v=$('featIn').value.trim().slice(0,40);if(!v)return;if(!draft.features.includes(v))draft.features.push(v);$('featIn').value='';saveDraft();renderChips();renderPreview()}
+function renderChips(){
+  const box=$('featChips');box.innerHTML='';
+  [...new Set([...PRESETS,...draft.features])].forEach(f=>{
+    const c=document.createElement('button');c.type='button';c.className='chip'+(draft.features.includes(f)?' on':'');c.textContent=f;
+    c.onclick=()=>{draft.features=draft.features.includes(f)?draft.features.filter(x=>x!==f):[...draft.features,f];saveDraft();renderChips();renderPreview()};
+    box.appendChild(c);
+  });
+}
+function renderExec(){
+  const box=$('execChips');if(!box)return;box.innerHTML='';
+  EXECUTORS.forEach(x=>{
+    const c=document.createElement('button');c.type='button';c.className='chip'+(draft.executors.includes(x)?' on':'');c.textContent=x;
+    c.onclick=()=>{draft.executors=draft.executors.includes(x)?draft.executors.filter(y=>y!==x):[...draft.executors,x];saveDraft();renderExec();renderPreview()};
+    box.appendChild(c);
+  });
+}
+function pickGame(g){
+  draft.game=g;if(!draft.title||/ Script$/.test(draft.title)){draft.title=g.name+' Script';if($('title'))$('title').value=draft.title}
+  const rec=LS.get('spl_recent',[]).filter(x=>x.placeId!==g.placeId);rec.unshift(g);LS.set('spl_recent',rec.slice(0,6));
+  saveDraft();renderGameArea();renderPreview();
+}
+function renderGameArea(){
+  const a=$('gameArea');if(!a)return;const g=draft.game;
+  if(g){
+    a.innerHTML=`<div class="sel"><img src="${esc(safeUrl(g.icon))}" alt=""><div class="t"><b>${esc(g.name)}</b><small style="color:var(--mut)">Place ${esc(g.placeId)}${g.playing!=null?', '+fmt(g.playing)+' playing':''}</small></div><button class="btn sec" id="chg">Change</button></div>`;
+    $('chg').onclick=()=>{draft.game=null;saveDraft();renderGameArea();renderPreview()};return;
+  }
+  const rec=LS.get('spl_recent',[]);
+  a.innerHTML=`<div class="gsearch"><input id="q" placeholder="Type a game name, paste a link or Place ID" autocomplete="off"><div class="spin hidden" id="spin"></div></div>
+    <div id="gameErr" class="err"></div><div id="results" class="results"></div>
+    <div id="suggBox">${rec.length?`<label>Recently used</label><div class="sugg">${rec.map((r,i)=>`<button type="button" class="chip" data-r="${i}">${esc(r.name)}</button>`).join('')}</div>`:''}
+    <label>Popular games</label><div class="sugg">${SUGG.map(n=>`<button type="button" class="chip" data-s="${esc(n)}">${esc(n)}</button>`).join('')}</div></div>`;
+  $('q').addEventListener('input',()=>{clearTimeout(searchTimer);const v=$('q').value.trim();if(!v){$('results').innerHTML='';$('suggBox').classList.remove('hidden');return}$('suggBox').classList.add('hidden');searchTimer=setTimeout(()=>search(v),320)});
+  $('q').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(searchTimer);const v=$('q').value.trim();if(v)search(v)}});
+  a.querySelectorAll('[data-s]').forEach(c=>c.onclick=()=>{$('q').value=c.dataset.s;$('q').dispatchEvent(new Event('input'))});
+  a.querySelectorAll('[data-r]').forEach(c=>c.onclick=()=>pickGame(rec[c.dataset.r]));
+  setTimeout(()=>{const q=$('q');if(q&&!draft.editId)q.focus()},50);
+}
+async function search(v){
+  const seq=++searchSeq,res=$('results'),err=$('gameErr'),spin=$('spin');if(!res)return;
+  err.textContent='';spin.classList.remove('hidden');
+  try{
+    const m=v.match(/roblox\.com\/(?:[a-z-]+\/)?games\/(\d+)/i),pid=m?m[1]:(/^\d{5,}$/.test(v)?v:null);
+    const map=g=>({universeId:g.id,name:g.name,placeId:g.rootPlaceId,playing:g.playing,visits:g.visits});
+    let list=[];
+    if(pid){
+      const u=await getJSON(`${PROXY.apis}/universes/v1/places/${pid}/universe`);
+      if(!u.universeId)throw new Error('Place ID not found');
+      list=(await getJSON(`${PROXY.games}/v1/games?universeIds=${u.universeId}`)).data.map(map);
+    }else{
+      const d=await getJSON(`${PROXY.apis}/search-api/omni-search?searchQuery=${encodeURIComponent(v)}&sessionId=${crypto.randomUUID()}&pageType=all`);
+      const games=[];(d.searchResults||[]).forEach(r=>{if(r.contentGroupType==='Game')(r.contents||[]).forEach(c=>games.push(c))});
+      const ids=games.slice(0,10).map(g=>g.universeId);
+      if(!ids.length)throw new Error('No games found for "'+v+'"');
+      list=(await getJSON(`${PROXY.games}/v1/games?universeIds=${ids.join(',')}`)).data.map(map);
+    }
+    const ic=await icons(list.map(g=>g.universeId));
+    if(seq!==searchSeq)return;
+    list.forEach(g=>g.icon=ic[g.universeId]||'');
+    res.innerHTML='';
+    list.forEach(g=>{
+      const d=document.createElement('div');d.className='game';
+      d.innerHTML=`<img src="${esc(g.icon)}" alt=""><div><b>${esc(g.name)}</b><small>${fmt(g.playing)} playing, ${fmt(g.visits)} visits</small></div>`;
+      d.onclick=()=>pickGame(g);res.appendChild(d);
+    });
+  }catch(e){if(seq===searchSeq){res.innerHTML='';err.textContent=e.message}}
+  if(seq===searchSeq&&$('spin'))$('spin').classList.add('hidden');
+}
+async function publish(){
+  const g=draft.game,title=draft.title.trim(),code=draft.code.trim(),link=draft.link.trim();
+  const bad=m=>{$('pubMsg').innerHTML=`<div class="err">${esc(m)}</div>`;toast(m,1)};
+  if(!g)return bad('Pick a game first.');
+  if(title.length<3)return bad('Title needs at least 3 characters.');
+  if(!code)return bad('Add your script code.');
+  if(link&&!safeUrl(link))return bad('The link must start with https://');
+  if(!draft.rules)return bad('Please confirm the script rules.');
+  $('pubBtn').disabled=true;
+  try{
+    const saved=await DB.save({title,description:draft.description.trim(),game_name:g.name,place_id:Number(g.placeId)||null,universe_id:Number(g.universeId)||null,icon:safeUrl(g.icon)||'',features:draft.features,key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,code,link},draft.editId);
+    toast(draft.editId?'Changes saved':'Published');draft=fresh();saveDraft();go('script/'+saved.id);
+  }catch(e){bad(e.message);$('pubBtn').disabled=false}
+}
+
+async function pageMine(){
+  if(!getSess()){$('app').innerHTML=`<div class="card empty"><h3>Log in to see your scripts</h3><div class="actions" style="justify-content:center"><a class="btn" href="#account">Login or register</a></div></div>`;return}
+  $('app').innerHTML='<div class="sk" style="height:200px"></div>';
+  try{
+    const list=await DB.mine(),views=list.reduce((a,x)=>a+(x.views||0),0);
+    $('app').innerHTML=`<div class="rowh"><h1 style="margin:0;font-size:30px;letter-spacing:-.8px">My scripts</h1><a class="btn" href="#publish" id="newBtn">New script</a></div>
+      <div class="mstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Total views</span></div></div>
+      <div class="card"><div id="list">${list.length?'':'<div class="empty"><h3>Nothing published yet</h3>Your scripts will show up here.</div>'}</div></div>`;
+    $('newBtn').onclick=()=>{draft=fresh();saveDraft()};
+    list.forEach(it=>{
+      const d=document.createElement('div');d.className='item';
+      d.innerHTML=`<img src="${esc(safeUrl(it.icon))}" alt=""><div class="meta"><b>${esc(it.title)}</b><small>${esc(it.game_name||'Universal')}, ${fmt(it.views)} views, ${esc(timeAgo(it.created_at))}</small></div><a class="btn sec" href="#script/${encodeURIComponent(it.id)}">Open</a><button class="btn danger">Delete</button>`;
+      d.querySelector('button').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');pageMine()}catch(e){toast(e.message,1)}};
+      $('list').appendChild(d);
+    });
+  }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
+}
+
+const AV_COLORS=['#ff4d9d','#a855f7','#3b82f6','#14b8a6','#f59e0b','#ef4444'];
+const ICON_USER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>';
+const dataImg=v=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v||'')?v:'';
+function avatarHTML(p,name,size){
+  p=p||{};
+  const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],img=dataImg(p.avatar);
+  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="">`:esc((name||'?')[0].toUpperCase())}</span>`;
+}
+function headerSync(){
+  const a=$('tAcc');if(!a)return;
+  const s=getSess(),img=s&&s.profile?dataImg(s.profile.avatar):'';
+  a.innerHTML=img?`<img src="${esc(img)}" alt="">`:ICON_USER;
+  const mh=$('mHead'),mo=$('mOut');
+  if(mh)mh.innerHTML=s?`${avatarHTML(s.profile,s.username,40)}<span class="mt"><b>${esc(s.username)}</b><small>${esc(s.email)}</small></span>`:`<span class="av" style="width:40px;height:40px;background:var(--s3)">${ICON_USER}</span><span class="mt"><b>Welcome</b><small>Log in to publish scripts</small></span>`;
+  if(mo)mo.classList.toggle('hidden',!s);
+}
+const Prof={
+  async load(id){
+    if(!id)return{};
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color`);return r[0]||{}}catch(e){return{}}}
+    const u=LS.get('spl_users',{})[id];
+    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||''}:{};
+  },
+  async sync(){
+    const s=getSess();if(!s)return{};
+    const p=await Prof.load(s.id);
+    let created=s.created;
+    try{if(REMOTE){const u=await rq('/auth/v1/user');created=u.created_at}else{const u=LS.get('spl_users',{})[s.id];if(u)created=u.created}}catch(e){}
+    LS.set('spl_sess',{...getSess(),profile:p,created});
+    headerSync();
+    return p;
+  },
+  async save(p){
+    const s=getSess();
+    if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
+    else{const all=LS.get('spl_users',{});if(!all[s.id])throw new Error('Account not found');Object.assign(all[s.id],p);LS.set('spl_users',all)}
+    LS.set('spl_sess',{...getSess(),profile:p});
+    headerSync();
+  }
+};
+function readAvatar(file){
+  return new Promise((res,rej)=>{
+    if(!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type))return rej(new Error('Choose a PNG, JPG or WebP image.'));
+    if(file.size>8*1024*1024)return rej(new Error('That image is larger than 8 MB.'));
+    const url=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      const S=192,c=document.createElement('canvas');c.width=c.height=S;
+      const m=Math.min(im.width,im.height),sx=(im.width-m)/2,sy=(im.height-m)/2;
+      c.getContext('2d').drawImage(im,sx,sy,m,m,0,0,S,S);
+      URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.85));
+    };
+    im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read this image.'))};
+    im.src=url;
+  });
+}
+const onAccount=()=>(location.hash.slice(1)||'home').split('/')[0]==='account';
+async function pageAccount(){
+  if(getSess()){
+    $('app').innerHTML='<div class="sk" style="height:240px"></div>';
+    let mine=[];
+    try{await Prof.sync()}catch(e){}
+    try{mine=await DB.mine()}catch(e){}
+    if(!onAccount())return;
+    renderProfile(mine);
+    return;
+  }
+  $('app').innerHTML=`<div class="join"><h1>Create your account</h1><p>Free. Publish scripts, track views and manage everything in one place.</p></div>
+    <div class="grid2 eq" style="margin-top:16px">
+    <div class="card"><h2>Login</h2><label>Email</label><input id="le" type="email"><label>Password</label><input type="password" id="lp">
+      <div class="actions"><button class="btn" id="loginBtn">Login</button></div><div id="lmsg"></div></div>
+    <div class="card"><h2>Register</h2><label>Email</label><input id="re" type="email"><label>Username (3-20 letters, numbers, _)</label><input id="ru"><label>Password (min. 8 characters)</label><input type="password" id="rp">
+      <div class="actions"><button class="btn" id="regBtn">Register</button></div><div id="rmsg"></div></div></div>
+    ${REMOTE?'':'<p class="hint" style="margin-top:14px">Demo mode: accounts exist only in this browser.</p>'}`;
+  $('loginBtn').onclick=async()=>{try{await Auth.login($('le').value.trim(),$('lp').value);try{await Prof.sync()}catch(e){}toast('Welcome back');go('home');route()}catch(e){$('lmsg').innerHTML=`<div class="err">${esc(e.message)}</div>`}};
+  $('regBtn').onclick=async()=>{
+    const e=$('re').value.trim(),u=$('ru').value.trim(),p=$('rp').value,m=$('rmsg');
+    if(!/^\S+@\S+\.\S+$/.test(e)){m.innerHTML='<div class="err">Enter a valid email.</div>';return}
+    if(!/^[A-Za-z0-9_]{3,20}$/.test(u)){m.innerHTML='<div class="err">Invalid username.</div>';return}
+    if(p.length<8){m.innerHTML='<div class="err">Password too short.</div>';return}
+    try{const r=await Auth.register(e,u,p);if(r==='confirm'){m.innerHTML='<div class="good">Account created. Check your email to confirm, then log in.</div>';return}try{await Prof.sync()}catch(x){}toast('Account created');go('home');route()}catch(er){m.innerHTML=`<div class="err">${esc(er.message)}</div>`}};
+}
+function renderProfile(mine){
+  const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
+  const since=s.created?new Date(s.created).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'-';
+  const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
+  const plink=safeUrl(p.link);
+  $('app').innerHTML=`
+  <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
+    <div class="pinfo"><h1>${esc(s.username)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
+    <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
+  <div class="grid2 eq">
+    <div class="card"><h2>Edit profile</h2>
+      <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
+        <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG or WebP. Cropped to a square.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
+        <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
+      <label>Accent color</label><div class="swatches" id="sw"></div>
+      <label>Bio</label><textarea id="bio" maxlength="160" style="min-height:80px;font-family:inherit" placeholder="What do you make?"></textarea><div class="hint" id="bioN"></div>
+      <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
+      <div class="actions"><button class="btn" id="saveP">Save profile</button></div><div id="pmsg"></div></div>
+    <div style="display:grid;gap:18px">
+      <div class="card"><h2>Change password</h2>
+        ${REMOTE?'':'<label>Current password</label><input type="password" id="op">'}
+        <label>New password (min. 8 characters)</label><input type="password" id="np">
+        <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>
+      <div class="card"><h2>Session</h2><div class="actions" style="margin-top:0"><button class="btn danger" id="logout">Log out</button></div></div>
+    </div></div>
+  <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
+  $('bio').value=p.bio||'';$('plinkIn').value=p.link||'';
+  const paint=()=>{
+    $('pBan').style.background=work.color;
+    $('pAv').innerHTML=avatarHTML(work,s.username,88);
+    $('eAv').innerHTML=avatarHTML(work,s.username,80);
+    $('rmBtn').classList.toggle('hidden',!work.avatar);
+    $('sw').innerHTML=AV_COLORS.map(c=>`<button type="button" class="${c===work.color?'on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
+    $('sw').querySelectorAll('button').forEach(b=>b.onclick=()=>{work.color=b.dataset.c;paint()});
+    $('bioN').textContent=$('bio').value.length+' / 160';
+  };
+  paint();
+  $('bio').addEventListener('input',()=>{$('bioN').textContent=$('bio').value.length+' / 160';$('pBio').textContent=$('bio').value});
+  $('upBtn').onclick=()=>$('file').click();
+  $('upLink').onclick=()=>$('file').click();
+  $('file').onchange=async()=>{
+    const f=$('file').files[0];if(!f)return;
+    try{work.avatar=await readAvatar(f);paint()}catch(e){toast(e.message,1)}
+    $('file').value='';
+  };
+  $('rmBtn').onclick=()=>{work.avatar='';paint()};
+  $('saveP').onclick=async()=>{
+    const link=$('plinkIn').value.trim(),m=$('pmsg');
+    if(link&&!safeUrl(link)){m.innerHTML='<div class="err">The link must start with https://</div>';return}
+    $('saveP').disabled=true;
+    try{
+      await Prof.save({avatar:work.avatar,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
+      m.innerHTML='';toast('Profile saved');renderProfile(mine);
+    }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
+    $('saveP').disabled=false;
+  };
+  let mSort='new';
+  const drawMine=()=>{
+    document.querySelectorAll('#mSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===mSort));
+    const list=[...mine].sort((x,y)=>mSort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at)),box=$('myFeed');
+    if(!list.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Nothing published yet</h3>Your scripts will show up here.<div class="actions" style="justify-content:center"><a class="btn" href="#publish">Publish a script</a></div></div>';return}
+    box.innerHTML=list.map(it=>`<div class="mc">${cardHTML({...it,author:s.username})}<div class="mcact"><button type="button" class="btn sec" data-e="${esc(it.id)}">Edit</button><button type="button" class="btn danger" data-d="${esc(it.id)}">Delete</button></div></div>`).join('');
+    box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
+      try{
+        const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
+        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
+        saveDraft();go('publish');
+      }catch(e){toast(e.message,1)}
+    });
+    box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Delete this script?'))return;
+      try{await DB.remove(b.dataset.d);toast('Script deleted');pageAccount()}catch(e){toast(e.message,1)}
+    });
+  };
+  document.querySelectorAll('#mSort button').forEach(b=>b.onclick=()=>{mSort=b.dataset.v;drawMine()});
+  $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
+  drawMine();
+  $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
+  $('cp').onclick=async()=>{
+    if($('np').value.length<8){$('msg').innerHTML='<div class="err">New password is too short.</div>';return}
+    try{await Auth.changePassword(REMOTE?'':$('op').value,$('np').value);$('msg').innerHTML='<div class="good">Password updated.</div>'}catch(e){$('msg').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+  };
+}
+route();
+</script>
+</body>
+</html>
