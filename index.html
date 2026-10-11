@@ -18,6 +18,8 @@ a{color:inherit}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
 :focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .hidden{display:none!important}
+[data-u]{cursor:pointer}
+.ulink:hover{text-decoration:underline}
 
 .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(10,10,11,.96);border-bottom:1px solid var(--line)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:17px;letter-spacing:-.02em;margin-right:auto}
@@ -55,6 +57,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;paddin
 .mout{margin-top:2px;padding:9px;text-align:center;color:var(--mut);font-weight:500;font-size:13.5px;border-radius:var(--r)}
 .mout:hover{color:var(--bad);background:var(--s2)}
 .av svg{width:18px;height:18px}
+.avl{display:flex;flex:0 0 auto;align-self:flex-start}
 
 .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px}
 .note{border:1px solid var(--line2);border-left:3px solid var(--pink);background:var(--s1);padding:10px 14px;font-size:13px;color:var(--mut);border-radius:var(--r);margin-bottom:18px}
@@ -123,6 +126,7 @@ a.sc:hover{border-color:var(--line2);transform:translateY(-2px)}
 .sc .gn{font-size:12px;color:var(--pink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sc b{font-size:15px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;letter-spacing:-.01em}
 .sc .by{color:var(--mut);font-size:12.5px}
+.sc .by .ulink:hover{color:var(--pink)}
 .sc .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .badge{font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:5px;background:var(--s2);border:1px solid var(--line);color:var(--mut)}
 .badge.k{background:rgba(255,61,139,.1);border-color:rgba(255,61,139,.25);color:var(--pink)}
@@ -225,13 +229,11 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 #pAv{margin-top:-44px;border:4px solid var(--s1);border-radius:50%;display:flex}
 .pinfo{padding-top:14px;min-width:0}
 .pinfo h1{margin:0;font-size:24px;letter-spacing:-.025em;line-height:1.2;font-weight:700}
-.pbio{margin:8px 0 0;color:#cfcfd6;max-width:520px;white-space:pre-wrap}
+.pbio{margin:8px 0 0;color:#cfcfd6;max-width:520px;white-space:pre-wrap;word-break:break-word}
 .pbio:empty{display:none}
 .plink{display:inline-block;margin-top:10px;font-size:13.5px;font-weight:500;color:var(--pink);text-decoration:none}
 .plink:hover{text-decoration:underline}
-.pstats{grid-column:1/-1;display:flex;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
-.pstats div{flex:1}
-.pstats div+div{padding-left:20px;border-left:1px solid var(--line)}
+.pstats{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:14px 20px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 .pstats b{display:block;font-size:18px;font-weight:700}
 .pstats span{color:var(--mut);font-size:12px}
 .avrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -259,6 +261,12 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .mcact{display:flex;gap:8px}
 .mcact .btn{flex:1;padding:8px 12px;font-size:13.5px}
 
+.ulist{display:grid;gap:8px;margin-top:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.urow{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--s1);transition:border-color .12s}
+.urow:hover{border-color:var(--line2)}
+.urow .nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#uTabs{margin-top:4px}
+
 .lk{display:inline-flex;align-items:center;gap:8px}
 .lk svg{width:16px;height:16px;transition:transform .15s}
 .lk:hover svg{transform:scale(1.12)}
@@ -273,8 +281,10 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .cmfoot{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .cmfoot .hint{margin:0}
 .cmlist{display:grid;gap:0;margin-top:10px}
-.cm{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
-.cm:first-child{border-top:0}
+.thread{border-top:1px solid var(--line)}
+.thread:first-child{border-top:0}
+.cm{display:flex;gap:12px;padding:14px 0}
+.cm.rp{padding:10px 0}
 .cm .cb{min-width:0;flex:1}
 .cm .ch{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cm .ch b{font-size:14px;font-weight:600}
@@ -282,6 +292,16 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .cm .ch .dn{margin-left:auto;color:var(--mut);font-size:12.5px;font-weight:500}
 .cm .ch .dn:hover{color:var(--bad)}
 .cm .ct{margin-top:3px;white-space:pre-wrap;word-break:break-word;color:#d9d9de}
+.cact{display:flex;gap:16px;align-items:center;margin-top:6px}
+.cact button{display:inline-flex;align-items:center;gap:6px;color:var(--mut);font-size:12.5px;font-weight:600;padding:2px 0}
+.cact button:hover{color:var(--text)}
+.cact .cl svg{width:15px;height:15px}
+.cact .cl.on{color:var(--pink)}
+.cact .cl.on svg{fill:currentColor}
+.reps{margin-left:18px;padding-left:16px;border-left:2px solid var(--line);padding-bottom:6px}
+.rform{display:grid;gap:8px;margin-top:8px}
+.rform:empty{display:none}
+.rform textarea{min-height:64px;font-family:inherit;font-size:14px}
 
 .nh{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 10px;font-size:14px;font-weight:600}
 .ne{padding:28px 14px;text-align:center;color:var(--mut);font-size:13.5px}
@@ -291,9 +311,10 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .ni.new:after{content:"";position:absolute;right:12px;top:16px;width:7px;height:7px;border-radius:50%;background:var(--pink)}
 .nic{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;flex:0 0 auto;background:var(--s3)}
 .nic svg{width:16px;height:16px}
-.nic.like{color:var(--pink)}
-.nic.like svg{fill:currentColor}
-.nic.comment{color:#7aa7ff}
+.nic.like,.nic.clike{color:var(--pink)}
+.nic.like svg,.nic.clike svg{fill:currentColor}
+.nic.comment,.nic.reply{color:#7aa7ff}
+.nic.follow{color:var(--good)}
 .nt{display:grid;gap:2px;min-width:0;font-size:13.5px;line-height:1.4;padding-right:16px}
 .nt small{color:var(--mut);font-size:12px}
 .nt .nq{color:#c4c4cc;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -364,6 +385,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const safeUrl=u=>/^https:\/\//i.test(u||'')?u:'';
 const go=p=>{location.hash=p};
 const getSess=()=>LS.get('spl_sess',null);
+const userLink=(id,name)=>id?`<span class="ulink" data-u="${esc(id)}">${esc(name)}</span>`:esc(name);
 const fmt=n=>{n=Number(n)||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
 function timeAgo(d){
   if(!d)return 'just now';
@@ -390,6 +412,14 @@ if(REMOTE){
   if(draft.editId&&!isUUID(draft.editId)){draft=fresh();saveDraft()}
   if(location.hash.startsWith('#script/')&&!isUUID(location.hash.slice(8)))location.hash='home';
 }
+
+/* clicking any element with data-u opens that user's profile */
+document.addEventListener('click',e=>{
+  const u=e.target.closest('[data-u]');
+  if(!u||!u.dataset.u)return;
+  e.preventDefault();e.stopPropagation();
+  go('user/'+encodeURIComponent(u.dataset.u));
+},true);
 
 async function rq(path,{method='GET',body,headers={},auth=true,retry=true}={}){
   const s=getSess();
@@ -464,10 +494,17 @@ const DB={
     if(REMOTE){if(!isUUID(id))return null;const r=await rq(`/rest/v1/scripts?id=eq.${encodeURIComponent(id)}&select=*`);return r[0]||null}
     return LS.get('spl_scripts',[]).find(x=>x.id===id)||null;
   },
+  async byUser(uid){
+    if(!uid)return[];
+    if(REMOTE){
+      if(!isUUID(uid))return[];
+      return rq(`/rest/v1/scripts?user_id=eq.${encodeURIComponent(uid)}&select=id,user_id,title,game_name,icon,features,executors,key_system,paid,views,author,created_at&order=created_at.desc`);
+    }
+    return LS.get('spl_scripts',[]).filter(x=>x.user_id===uid).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+  },
   async mine(){
     const s=getSess();if(!s)return[];
-    if(REMOTE)return rq(`/rest/v1/scripts?user_id=eq.${encodeURIComponent(s.id)}&select=id,title,game_name,icon,features,executors,key_system,paid,views,created_at&order=created_at.desc`);
-    return LS.get('spl_scripts',[]).filter(x=>x.user_id===s.id).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at));
+    return DB.byUser(s.id);
   },
   async save(item,id){
     const s=getSess();
@@ -509,44 +546,115 @@ const DB={
     const all=LS.get('spl_likes',{});all[id]=(all[id]||[]).filter(x=>x!==s.id);LS.set('spl_likes',all);
     LS.set('spl_likemeta',LS.get('spl_likemeta',[]).filter(m=>!(m.script_id===id&&m.user_id===s.id)));
   },
+
+  /* follows */
+  async followers(id){
+    if(REMOTE){
+      if(!isUUID(id))return[];
+      const r=await rq(`/rest/v1/follows?following_id=eq.${encodeURIComponent(id)}&select=follower_id,author,created_at&order=created_at.desc&limit=1000`);
+      return r.map(x=>({id:x.follower_id,author:x.author}));
+    }
+    return LS.get('spl_follows',[]).filter(f=>f.following_id===id).map(f=>({id:f.follower_id,author:f.author}));
+  },
+  async following(id){
+    if(REMOTE){
+      if(!isUUID(id))return[];
+      const r=await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(id)}&select=following_id,created_at&order=created_at.desc&limit=1000`);
+      return r.map(x=>({id:x.following_id}));
+    }
+    return LS.get('spl_follows',[]).filter(f=>f.follower_id===id).map(f=>({id:f.following_id}));
+  },
+  async follow(id){
+    const s=getSess();
+    if(REMOTE){await rq('/rest/v1/follows?on_conflict=follower_id,following_id',{method:'POST',body:{follower_id:s.id,following_id:id,author:s.username},headers:{Prefer:'resolution=ignore-duplicates,return=minimal'}});return}
+    const all=LS.get('spl_follows',[]).filter(f=>!(f.follower_id===s.id&&f.following_id===id));
+    all.push({follower_id:s.id,following_id:id,author:s.username,created_at:new Date().toISOString()});LS.set('spl_follows',all);
+  },
+  async unfollow(id){
+    const s=getSess();
+    if(REMOTE){await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(s.id)}&following_id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+    LS.set('spl_follows',LS.get('spl_follows',[]).filter(f=>!(f.follower_id===s.id&&f.following_id===id)));
+  },
+
+  /* comment likes */
+  async likeComment(id){
+    const s=getSess();
+    if(REMOTE){await rq('/rest/v1/comment_likes?on_conflict=comment_id,user_id',{method:'POST',body:{comment_id:id,user_id:s.id,author:s.username},headers:{Prefer:'resolution=ignore-duplicates,return=minimal'}});return}
+    const all=LS.get('spl_clikes',[]).filter(l=>!(l.comment_id===id&&l.user_id===s.id));
+    all.push({comment_id:id,user_id:s.id,author:s.username,created_at:new Date().toISOString()});LS.set('spl_clikes',all);
+  },
+  async unlikeComment(id){
+    const s=getSess();
+    if(REMOTE){await rq(`/rest/v1/comment_likes?comment_id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(s.id)}`,{method:'DELETE'});return}
+    LS.set('spl_clikes',LS.get('spl_clikes',[]).filter(l=>!(l.comment_id===id&&l.user_id===s.id)));
+  },
+
   async notifs(){
     const s=getSess();if(!s)return[];
     const mine=await DB.mine();
-    if(!mine.length)return[];
     const ids=mine.map(x=>x.id),titles={};
     mine.forEach(x=>titles[x.id]=x.title);
-    let likes,coms;
+    let likes=[],coms=[],follows=[],myC=[],clikes=[],replies=[];
     if(REMOTE){
-      const list=ids.map(encodeURIComponent).join(','),me=encodeURIComponent(s.id);
-      [likes,coms]=await Promise.all([
-        rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`),
-        rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
+      const me=encodeURIComponent(s.id),list=ids.map(encodeURIComponent).join(',');
+      [likes,coms,follows,myC]=await Promise.all([
+        ids.length?rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`):[],
+        ids.length?rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`):[],
+        rq(`/rest/v1/follows?following_id=eq.${me}&select=follower_id,author,created_at&order=created_at.desc&limit=50`),
+        rq(`/rest/v1/script_comments?user_id=eq.${me}&select=id,script_id,body&order=created_at.desc&limit=100`)
       ]);
+      if(myC.length){
+        const cids=myC.map(c=>encodeURIComponent(c.id)).join(',');
+        [clikes,replies]=await Promise.all([
+          rq(`/rest/v1/comment_likes?comment_id=in.(${cids})&user_id=neq.${me}&select=comment_id,user_id,author,created_at&order=created_at.desc&limit=50`),
+          rq(`/rest/v1/script_comments?parent_id=in.(${cids})&user_id=neq.${me}&select=id,script_id,parent_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
+        ]);
+      }
     }else{
+      const allC=LS.get('spl_comments',[]);
       likes=LS.get('spl_likemeta',[]).filter(l=>ids.includes(l.script_id)&&l.user_id!==s.id);
-      coms=LS.get('spl_comments',[]).filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
+      coms=allC.filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
+      follows=LS.get('spl_follows',[]).filter(f=>f.following_id===s.id).map(f=>({follower_id:f.follower_id,author:f.author,created_at:f.created_at}));
+      myC=allC.filter(c=>c.user_id===s.id);
+      const mids=myC.map(c=>c.id);
+      clikes=LS.get('spl_clikes',[]).filter(l=>mids.includes(l.comment_id)&&l.user_id!==s.id);
+      replies=allC.filter(c=>c.parent_id&&mids.includes(c.parent_id)&&c.user_id!==s.id);
     }
+    const cmap={};myC.forEach(c=>cmap[c.id]=c);
+    const replyIds=new Set(replies.map(r=>r.id));
     const out=[
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
-      ...coms.map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
+      ...coms.filter(c=>!replyIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
+      ...replies.map(r=>({type:'reply',script_id:r.script_id,user_id:r.user_id,author:r.author,body:r.body,created_at:r.created_at})),
+      ...clikes.map(l=>{const c=cmap[l.comment_id]||{};return{type:'clike',script_id:c.script_id,user_id:l.user_id,author:l.author||'Someone',body:c.body,created_at:l.created_at}}),
+      ...follows.map(f=>({type:'follow',user_id:f.follower_id,author:f.author||'Someone',created_at:f.created_at}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
   async comments(id){
-    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at&order=created_at.desc&limit=100`);
-    return LS.get('spl_comments',[]).filter(c=>c.script_id===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at,parent_id,comment_likes(user_id)&order=created_at.desc&limit=300`);
+    const likes=LS.get('spl_clikes',[]);
+    return LS.get('spl_comments',[]).filter(c=>c.script_id===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(c=>({...c,comment_likes:likes.filter(l=>l.comment_id===c.id).map(l=>({user_id:l.user_id}))}));
   },
-  async addComment(id,body){
+  async addComment(id,body,parent){
     const s=getSess();
-    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body},headers:{Prefer:'return=representation'}});return r[0]}
+    if(REMOTE){
+      const row={script_id:id,user_id:s.id,author:s.username,body};
+      if(parent)row.parent_id=parent;
+      const r=await rq('/rest/v1/script_comments',{method:'POST',body:row,headers:{Prefer:'return=representation'}});return r[0];
+    }
     const all=LS.get('spl_comments',[]);
     const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,created_at:new Date().toISOString()};
+    if(parent)n.parent_id=parent;
     all.push(n);LS.set('spl_comments',all);return n;
   },
   async removeComment(id){
     const s=getSess();
     if(REMOTE){await rq(`/rest/v1/script_comments?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
-    LS.set('spl_comments',LS.get('spl_comments',[]).filter(c=>!(c.id===id&&c.user_id===s.id)));
+    const all=LS.get('spl_comments',[]),gone=new Set(all.filter(c=>c.id===id&&c.user_id===s.id).map(c=>c.id));
+    all.forEach(c=>{if(c.parent_id&&gone.has(c.parent_id))gone.add(c.id)});
+    LS.set('spl_comments',all.filter(c=>!gone.has(c.id)));
+    LS.set('spl_clikes',LS.get('spl_clikes',[]).filter(l=>!gone.has(l.comment_id)));
   }
 };
 
@@ -564,11 +672,21 @@ const nKey=()=>{const s=getSess();return s?'spl_nread_'+s.id:''};
 function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return notifs.filter(n=>new Date(n.created_at).getTime()>t).length}
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
+function nText(n){
+  const a=`<b>${esc(n.author)}</b>`;
+  if(n.type==='like')return `${a} liked <b>${esc(n.title||'your script')}</b>`;
+  if(n.type==='comment')return `${a} commented on <b>${esc(n.title||'your script')}</b>`;
+  if(n.type==='reply')return `${a} replied to your comment`;
+  if(n.type==='clike')return `${a} liked your comment`;
+  return `${a} started following you`;
+}
+function nHref(n){return n.type==='follow'?`#user/${encodeURIComponent(n.user_id)}`:`#script/${encodeURIComponent(n.script_id||'')}`}
+function nIcon(t){return t==='like'||t==='clike'?ICON_HEART:t==='follow'?ICON_USER:ICON_CHAT}
 function nRender(){
   const p=$('nPanel');
-  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes and comments on your scripts.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='like'?'liked':'commented on'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
-  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes and comments on your scripts show up here.</div>'}`;
+  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and followers.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${nIcon(n.type)}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments, replies and new followers show up here.</div>'}`;
 }
 async function nLoad(){
   if(!getSess()){notifs=[];nBadge();return}
@@ -608,7 +726,7 @@ function route(){
   document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
   const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
   closeMenu();closeNotif();nLoad();
-  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg)}[p]||pageHome)();
+  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg),user:()=>pageUser(decodeURIComponent(arg||''))}[p]||pageHome)();
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
@@ -619,7 +737,8 @@ const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
 const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
 function cardHTML(it,link=true){
   const img=safeUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
-  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${esc(it.author||'you')}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
+  const au=link?userLink(it.user_id,it.author||'you'):esc(it.author||'you');
+  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${au}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
 }
 const fcount=()=>(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
 function syncFilters(){
@@ -763,7 +882,7 @@ async function pageScript(id){
     DB.view(id);
     const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who ulink" id="auth" data-u="${esc(it.user_id)}">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
       ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
@@ -812,8 +931,9 @@ async function initLikes(it){
 async function initComments(it){
   const form=$('cmForm');if(!form)return;
   const s=getSess();
-  const COOLDOWN=10*60*1000;
-  let list=[],profs={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0;
+  const COOLDOWN=10*60*1000,RCOOL=30*1000;
+  let list=[],profs={},cl={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0,lastR=s?LS.get('spl_rp_'+s.id,0):0;
+  const likeSet=id=>cl[id]||(cl[id]=new Set());
   if(s){
     form.innerHTML=`<div class="cmform"><textarea id="cmIn" maxlength="500" placeholder="Write a comment..."></textarea><div class="cmfoot"><span class="hint" id="cmN">0 / 500</span><button type="button" class="btn" id="cmPost">Post comment</button></div><div id="cmMsg"></div></div>`;
     $('cmIn').addEventListener('input',()=>{$('cmN').textContent=$('cmIn').value.length+' / 500'});
@@ -839,22 +959,76 @@ async function initComments(it){
   }else{
     form.innerHTML='<p class="hint" style="margin:0 0 6px"><a href="#account" style="color:var(--pink);font-weight:700">Log in</a> to write a comment.</p>';
   }
+  const one=(c,rep)=>{
+    const cur=getSess(),set=likeSet(c.id),liked=!!cur&&set.has(cur.id);
+    return `<div class="cm${rep?' rp':''}"><span class="avl" data-u="${esc(c.user_id)}">${avatarHTML(profs[c.user_id],c.author,rep?28:36)}</span><div class="cb"><div class="ch"><b class="ulink" data-u="${esc(c.user_id)}">${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div><div class="cact"><button type="button" class="cl${liked?' on':''}" data-l="${esc(c.id)}" aria-pressed="${liked}" aria-label="Like comment">${ICON_HEART}<span>${set.size||''}</span></button><button type="button" data-r="${esc(c.id)}">Reply</button></div><div class="rform" data-f="${esc(c.id)}"></div></div></div>`;
+  };
   const draw=()=>{
     const box=$('cmList');if(!box)return;
     $('cmCount').textContent=list.length;
-    if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
-    const cur=getSess();
-    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    const tops=list.filter(c=>!c.parent_id);
+    if(!tops.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
+    const reps={};
+    list.filter(c=>c.parent_id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).forEach(c=>(reps[c.parent_id]||(reps[c.parent_id]=[])).push(c));
+    box.innerHTML=tops.map(c=>`<div class="thread">${one(c,false)}${reps[c.id]?`<div class="reps">${reps[c.id].map(r=>one(r,true)).join('')}</div>`:''}</div>`).join('');
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      if(!await ask('Delete this comment?','This comment will be removed for everyone.'))return;
-      try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
+      if(!await ask('Delete this comment?','This comment and its replies will be removed for everyone.'))return;
+      try{
+        const id=b.dataset.d;
+        await DB.removeComment(id);
+        list=list.filter(x=>x.id!==id&&x.parent_id!==id);
+        draw();toast('Comment deleted');
+      }catch(e){toast(e.message,1)}
     });
+    box.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>toggleLike(b.dataset.l,b));
+    box.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>openReply(b.dataset.r));
+  };
+  const lbusy=new Set();
+  const toggleLike=async(id,btn)=>{
+    const cur=getSess();
+    if(!cur){toast('Log in to like comments',1);return}
+    if(lbusy.has(id))return;lbusy.add(id);
+    const set=likeSet(id),was=set.has(cur.id);
+    const paint=()=>{const on=set.has(cur.id);btn.classList.toggle('on',on);btn.setAttribute('aria-pressed',String(on));btn.querySelector('span').textContent=set.size||''};
+    if(was)set.delete(cur.id);else set.add(cur.id);
+    paint();
+    try{if(was)await DB.unlikeComment(id);else await DB.likeComment(id)}
+    catch(e){if(was)set.add(cur.id);else set.delete(cur.id);paint();toast(e.message,1)}
+    lbusy.delete(id);
+  };
+  const openReply=id=>{
+    const cur=getSess();
+    if(!cur){toast('Log in to reply',1);return}
+    const c=list.find(x=>x.id===id);if(!c)return;
+    const box=$('cmList').querySelector(`[data-f="${CSS.escape(id)}"]`);if(!box)return;
+    if(box.innerHTML){box.innerHTML='';return}
+    box.innerHTML=`<textarea maxlength="500" placeholder="Reply to ${esc(c.author)}..."></textarea><div class="cmfoot"><span class="hint">0 / 500</span><span class="rowact"><button type="button" class="btn sec" data-x>Cancel</button><button type="button" class="btn" data-p>Reply</button></span></div><div data-m></div>`;
+    const ta=box.querySelector('textarea'),n=box.querySelector('.hint'),m=box.querySelector('[data-m]'),post=box.querySelector('[data-p]');
+    if(c.parent_id)ta.value='@'+c.author+' ';
+    n.textContent=ta.value.length+' / 500';
+    ta.addEventListener('input',()=>{n.textContent=ta.value.length+' / 500'});
+    box.querySelector('[data-x]').onclick=()=>{box.innerHTML=''};
+    post.onclick=async()=>{
+      const v=ta.value.trim();
+      if(!v){m.innerHTML='<div class="err">Write something first.</div>';return}
+      const wait=RCOOL-(Date.now()-lastR);
+      if(wait>0){m.innerHTML=`<div class="err">Please wait ${Math.ceil(wait/1000)} s before replying again.</div>`;return}
+      post.disabled=true;m.innerHTML='';
+      try{
+        const r=await DB.addComment(it.id,v,c.parent_id||c.id);
+        lastR=Date.now();LS.set('spl_rp_'+cur.id,lastR);
+        const me=getSess();if(me&&me.profile)profs[me.id]=me.profile;
+        list.push(r);draw();
+      }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`;post.disabled=false}
+    };
+    ta.focus();
   };
   try{
     list=await DB.comments(it.id);
+    list.forEach(c=>{cl[c.id]=new Set((c.comment_likes||[]).map(x=>x.user_id))});
     if(!$('cmList'))return;
     draw();
-    profs=await Prof.many([...new Set(list.map(c=>c.user_id))]);
+    Object.assign(profs,await Prof.many([...new Set(list.map(c=>c.user_id))]));
     draw();
   }catch(e){
     if($('cmList'))$('cmList').innerHTML=`<p class="err">Could not load comments: ${esc(e.message)}</p>`;
@@ -1018,9 +1192,9 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color`);return r[0]||{}}catch(e){return{}}}
+    if(REMOTE){if(!isUUID(id))return{};try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color,username`);return r[0]||{}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
-    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||''}:{};
+    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||''}:{};
   },
   async many(ids){
     const out={};
@@ -1028,16 +1202,19 @@ const Prof={
     if(REMOTE){
       const ok=ids.filter(isUUID);
       if(!ok.length)return out;
-      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color`);r.forEach(p=>out[p.id]=p)}catch(e){}
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color,username`);r.forEach(p=>out[p.id]=p)}catch(e){}
       return out;
     }
     const all=LS.get('spl_users',{});
-    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||''}});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||'',username:u.username||''}});
     return out;
   },
   async sync(){
     const s=getSess();if(!s)return{};
     const p=await Prof.load(s.id);
+    if(REMOTE&&p.username!==s.username){
+      try{await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,username:s.username},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});p.username=s.username}catch(e){}
+    }
     let created=s.created;
     try{if(REMOTE){const u=await rq('/auth/v1/user');created=u.created_at}else{const u=LS.get('spl_users',{})[s.id];if(u)created=u.created}}catch(e){}
     LS.set('spl_sess',{...getSess(),profile:p,created});
@@ -1046,9 +1223,9 @@ const Prof={
   },
   async save(p){
     const s=getSess();
-    if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
+    if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,username:s.username,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
     else{const all=LS.get('spl_users',{});if(!all[s.id])throw new Error('Account not found');Object.assign(all[s.id],p);LS.set('spl_users',all)}
-    LS.set('spl_sess',{...getSess(),profile:p});
+    LS.set('spl_sess',{...getSess(),profile:{...p,username:s.username}});
     headerSync();
   }
 };
@@ -1068,14 +1245,86 @@ function readAvatar(file){
   });
 }
 const onAccount=()=>(location.hash.slice(1)||'home').split('/')[0]==='account';
+
+/* public profile of any user */
+async function pageUser(id){
+  const my=location.hash;
+  $('app').innerHTML='<div class="sk" style="height:240px"></div>';
+  const missing=()=>{$('app').innerHTML='<div class="card empty"><h3>User not found</h3><a class="btn" href="#home">Back to scripts</a></div>'};
+  try{
+    if(!id||(REMOTE&&!isUUID(id)))return missing();
+    const [p,scripts,fo,fg]=await Promise.all([Prof.load(id),DB.byUser(id),DB.followers(id),DB.following(id)]);
+    if(location.hash!==my)return;
+    if(!Object.keys(p).length&&!scripts.length&&!fo.length&&!fg.length)return missing();
+    const name=p.username||(scripts[0]&&scripts[0].author)||'User';
+    const views=scripts.reduce((a,x)=>a+(x.views||0),0);
+    const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
+    const plink=safeUrl(p.link);
+    let followers=fo,following=fg,tab='scripts',busy=false;
+    const profMap={};
+    $('app').innerHTML=`
+    <section class="prof"><div class="pban" style="background:${work.color}"></div><div class="pbody"><div id="pAv">${avatarHTML(work,name,88)}</div>
+      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1>${p.bio?`<p class="pbio">${esc(p.bio)}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}<div class="actions" style="margin-top:12px" id="uAct"></div></div>
+      <div class="pstats"><div><b>${scripts.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b id="uFo">0</b><span>Followers</span></div><div><b id="uFg">0</b><span>Following</span></div></div></div></section>
+    <div class="seg2" id="uTabs"><button data-t="scripts">Scripts</button><button data-t="followers">Followers</button><button data-t="following">Following</button></div>
+    <div id="uBody"></div>`;
+    const drawAct=()=>{
+      const a=$('uAct');if(!a)return;
+      const cur=getSess();
+      if(cur&&cur.id===id)a.innerHTML='<a class="btn sec" href="#account">Edit profile</a>';
+      else{
+        const f=!!cur&&followers.some(x=>x.id===cur.id);
+        a.innerHTML=`<button type="button" class="btn${f?' sec':''}" id="fBtn">${f?'Following':'Follow'}</button>`;
+        $('fBtn').onclick=toggle;
+      }
+      $('uFo').textContent=fmt(followers.length);$('uFg').textContent=fmt(following.length);
+    };
+    const toggle=async()=>{
+      const cur=getSess();
+      if(!cur){toast('Log in to follow users',1);return}
+      if(busy)return;busy=true;
+      try{
+        const f=followers.some(x=>x.id===cur.id);
+        if(f){await DB.unfollow(id);followers=followers.filter(x=>x.id!==cur.id)}
+        else{await DB.follow(id);followers=[{id:cur.id,author:cur.username},...followers];profMap[cur.id]=cur.profile||{}}
+        drawAct();if(tab==='followers')drawBody();
+      }catch(e){toast(e.message,1)}
+      busy=false;
+    };
+    const drawBody=async()=>{
+      const t=tab;
+      document.querySelectorAll('#uTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+      const box=$('uBody');if(!box)return;
+      if(t==='scripts'){
+        box.innerHTML=scripts.length?`<div class="feed">${scripts.map(it=>cardHTML({...it,author:it.author||name})).join('')}</div>`:'<div class="empty"><h3>Nothing published yet</h3>This user has no scripts.</div>';
+        return;
+      }
+      const list=t==='followers'?followers:following;
+      const need=list.map(x=>x.id).filter(x=>!profMap[x]);
+      if(need.length){
+        box.innerHTML='<div class="hint" style="margin-top:16px">Loading...</div>';
+        const m=await Prof.many(need);
+        need.forEach(i=>profMap[i]=m[i]||{});
+        if(location.hash!==my||tab!==t||!$('uBody'))return;
+      }
+      $('uBody').innerHTML=list.length?`<div class="ulist">${list.map(x=>{const q=profMap[x.id]||{},n=q.username||x.author||'User';return `<div class="urow" data-u="${esc(x.id)}">${avatarHTML(q,n,40)}<span class="nm">${esc(n)}${ownerTag(x.id)}</span></div>`}).join('')}</div>`:`<div class="empty"><h3>${t==='followers'?'No followers yet':'Not following anyone yet'}</h3></div>`;
+    };
+    document.querySelectorAll('#uTabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;drawBody()});
+    drawAct();drawBody();
+  }catch(e){if(location.hash===my)$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
+}
+
 async function pageAccount(){
   if(getSess()){
     $('app').innerHTML='<div class="sk" style="height:240px"></div>';
-    let mine=[];
+    let mine=[],nf=0,ng=0;
     try{await Prof.sync()}catch(e){}
+    const cs=getSess();
+    if(!cs)return pageAccount();
     try{mine=await DB.mine()}catch(e){}
+    try{const [a,b]=await Promise.all([DB.followers(cs.id),DB.following(cs.id)]);nf=a.length;ng=b.length}catch(e){}
     if(!onAccount())return;
-    renderProfile(mine);
+    renderProfile(mine,nf,ng);
     return;
   }
   if(REMOTE){
@@ -1099,106 +1348,6 @@ async function pageAccount(){
     if(p.length<8){m.innerHTML='<div class="err">Password too short.</div>';return}
     try{const r=await Auth.register(e,u,p);if(r==='confirm'){m.innerHTML='<div class="good">Account created. Check your email to confirm, then log in.</div>';return}try{await Prof.sync()}catch(x){}toast('Account created');go('home');route()}catch(er){m.innerHTML=`<div class="err">${esc(er.message)}</div>`}};
 }
-function renderProfile(mine){
+function renderProfile(mine,nf=0,ng=0){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
-  const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
-  const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
-  const plink=safeUrl(p.link);
-  $('app').innerHTML=`
-  <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
-    <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
-    <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
-  <div class="grid2 eq">
-    <div class="card"><h2>Edit profile</h2>
-      <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
-        <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG or WebP. Cropped to a square.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
-        <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
-      <label>Accent color</label><div class="swatches" id="sw"></div>
-      <label>Bio</label><textarea id="bio" maxlength="160" style="min-height:80px;font-family:inherit" placeholder="What do you make?"></textarea><div class="hint" id="bioN"></div>
-      <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
-      <div class="actions"><button class="btn" id="saveP">Save profile</button></div><div id="pmsg"></div></div>
-    <div style="display:grid;gap:18px">
-      ${REMOTE?'':`<div class="card"><h2>Change password</h2>
-        <label>Current password</label><input type="password" id="op">
-        <label>New password (min. 8 characters)</label><input type="password" id="np">
-        <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>`}
-      <div class="card"><h2>Session</h2><div class="actions" style="margin-top:0"><button class="btn danger" id="logout">Log out</button></div></div>
-    </div></div>
-  <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
-  $('bio').value=p.bio||'';$('plinkIn').value=p.link||'';
-  const paint=()=>{
-    $('pBan').style.background=work.color;
-    $('pAv').innerHTML=avatarHTML(work,s.username,88);
-    $('eAv').innerHTML=avatarHTML(work,s.username,80);
-    $('rmBtn').classList.toggle('hidden',!work.avatar);
-    $('sw').innerHTML=AV_COLORS.map(c=>`<button type="button" class="${c===work.color?'on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
-    $('sw').querySelectorAll('button').forEach(b=>b.onclick=()=>{work.color=b.dataset.c;paint()});
-    $('bioN').textContent=$('bio').value.length+' / 160';
-  };
-  paint();
-  $('bio').addEventListener('input',()=>{$('bioN').textContent=$('bio').value.length+' / 160';$('pBio').textContent=$('bio').value});
-  $('upBtn').onclick=()=>$('file').click();
-  $('upLink').onclick=()=>$('file').click();
-  $('file').onchange=async()=>{
-    const f=$('file').files[0];if(!f)return;
-    try{work.avatar=await readAvatar(f);paint()}catch(e){toast(e.message,1)}
-    $('file').value='';
-  };
-  $('rmBtn').onclick=()=>{work.avatar='';paint()};
-  $('saveP').onclick=async()=>{
-    const link=$('plinkIn').value.trim(),m=$('pmsg');
-    if(link&&!safeUrl(link)){m.innerHTML='<div class="err">The link must start with https://</div>';return}
-    $('saveP').disabled=true;
-    try{
-      await Prof.save({avatar:work.avatar,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
-      m.innerHTML='';toast('Profile saved');renderProfile(mine);
-    }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
-    $('saveP').disabled=false;
-  };
-  let mSort='new';
-  const drawMine=()=>{
-    document.querySelectorAll('#mSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===mSort));
-    const list=[...mine].sort((x,y)=>mSort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at)),box=$('myFeed');
-    if(!list.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Nothing published yet</h3>Your scripts will show up here.<div class="actions" style="justify-content:center"><a class="btn" href="#publish">Publish a script</a></div></div>';return}
-    box.innerHTML=list.map(it=>`<div class="mc">${cardHTML({...it,author:s.username,user_id:s.id})}<div class="mcact"><button type="button" class="btn sec" data-e="${esc(it.id)}">Edit</button><button type="button" class="btn danger" data-d="${esc(it.id)}">Delete</button></div></div>`).join('');
-    box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
-      try{
-        const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
-        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
-        saveDraft();go('publish');
-      }catch(e){toast(e.message,1)}
-    });
-    box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;
-      try{await DB.remove(b.dataset.d);toast('Script deleted');pageAccount()}catch(e){toast(e.message,1)}
-    });
-  };
-  document.querySelectorAll('#mSort button').forEach(b=>b.onclick=()=>{mSort=b.dataset.v;drawMine()});
-  $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
-  drawMine();
-  $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
-  if($('cp'))$('cp').onclick=async()=>{
-    if($('np').value.length<8){$('msg').innerHTML='<div class="err">New password is too short.</div>';return}
-    try{await Auth.changePassword(REMOTE?'':$('op').value,$('np').value);$('msg').innerHTML='<div class="good">Password updated.</div>'}catch(e){$('msg').innerHTML=`<div class="err">${esc(e.message)}</div>`}
-  };
-}
-async function oauthReturn(){
-  const qs=new URLSearchParams(location.search),hs=new URLSearchParams(location.hash.slice(1));
-  const hasTok=hs.get('access_token'),errMsg=hs.get('error_description')||qs.get('error_description');
-  if(!hasTok&&!errMsg)return;
-  history.replaceState(null,'',location.pathname+'#home');
-  if(errMsg){toast(errMsg.replace(/\+/g,' '),1);return}
-  try{
-    const token=hs.get('access_token'),refresh=hs.get('refresh_token');
-    const r=await fetch(CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
-    if(!r.ok)throw new Error('Login failed');
-    const u=await r.json();
-    LS.set('spl_sess',sessFrom({user:u,access_token:token,refresh_token:refresh}));
-    try{await Prof.sync()}catch(e){}
-    toast('Logged in');
-  }catch(e){toast(e.message,1)}
-}
-oauthReturn().finally(route);
-</script>
-</body>
-</html>
+  const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:
