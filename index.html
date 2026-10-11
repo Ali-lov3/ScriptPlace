@@ -276,6 +276,35 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,Consolas,mono
 .sg b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sg small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sg.all{color:var(--pink);font-weight:700;border-top:1px solid var(--line);border-radius:0 0 12px 12px;margin-top:4px}
+.bw{position:relative;display:inline-flex}
+.nb{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--pink);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;border:2px solid var(--bg);pointer-events:none}
+.npanel{position:absolute;right:12px;top:68px;width:min(380px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:8px;box-shadow:0 18px 40px rgba(0,0,0,.55);animation:mIn .14s ease-out;transform-origin:top right}
+.nh{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 10px;font-size:16px}
+.ne{padding:26px 14px;text-align:center;color:var(--mut);font-size:14px}
+.ni{display:flex;gap:12px;align-items:flex-start;padding:10px;border-radius:12px;text-decoration:none;position:relative}
+.ni:hover{background:var(--s2)}
+.ni.new{background:rgba(255,77,157,.08)}
+.ni.new:after{content:"";position:absolute;right:12px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--pink)}
+.nic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:var(--s3)}
+.nic svg{width:18px;height:18px}
+.nic.like{color:var(--pink)}
+.nic.like svg{fill:currentColor}
+.nic.comment{color:#6ea8ff}
+.nt{display:grid;gap:2px;min-width:0;font-size:14px;line-height:1.4;padding-right:16px}
+.nt small{color:var(--mut);font-size:12px}
+.nt .nq{color:#d8ccd5;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mo{position:fixed;inset:0;z-index:100;background:rgba(6,4,7,.72);display:grid;place-items:center;padding:18px;animation:fIn .15s ease-out}
+@keyframes fIn{from{opacity:0}}
+.md{width:min(380px,100%);background:var(--s1);border:1px solid var(--line);border-radius:20px;padding:24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6);animation:mIn .16s ease-out}
+.md .mic{width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:rgba(255,90,110,.14);color:var(--bad)}
+.md .mic svg{width:24px;height:24px}
+.md h3{margin:0 0 6px;font-size:20px;letter-spacing:-.3px}
+.md p{margin:0 0 20px;color:var(--mut);font-size:14px}
+.mbtn{display:flex;gap:10px}
+.mbtn .btn{flex:1}
+.md .btn.danger{background:var(--bad);color:#fff}
+.md .btn.danger:hover{filter:brightness(.9)}
+@media(prefers-reduced-motion:reduce){.mo,.md,.npanel{animation:none}}
 #toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99;display:grid;gap:8px;justify-items:center}
 .toast{background:var(--s3);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600}
 .toast.bad{border-color:var(--bad)}
@@ -293,9 +322,11 @@ window.SCRIPTPLACE_CONFIG={
   <a class="logo" href="#home"><img src="https://cdn.discordapp.com/attachments/1455257373458432186/1558479033614999672/123.png?ex=6acb9634&amp;is=6aca44b4&amp;hm=982e869b9aea6e6e916226dcaae6f171dcd0afbb6fad09fcbcac9b31e3129bfb" alt="" referrerpolicy="no-referrer" onerror="this.style.display='none'"><span>ScriptPlace</span></a>
   <div class="tools">
     <button class="ib" id="tSearch" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+    <span class="bw"><button class="ib" id="tBell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg></button><span class="nb hidden" id="bDot"></span></span>
     <a class="ib" id="tAcc" href="#account" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></a>
     <button class="ib" id="tMenu" aria-label="Menu"><svg class="i-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
+  <div class="npanel hidden" id="nPanel"></div>
   <nav class="menu hidden" id="menu">
     <a class="mhead" href="#account" id="mHead"></a>
     <a class="mi" href="#home" data-p="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
@@ -318,6 +349,8 @@ const SUGG=['Blox Fruits','Brookhaven','Adopt Me','Grow a Garden','Steal a Brain
 const PAGE=12;
 const ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/></svg>';
+const ICON_CHAT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+const ICON_TRASH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const OWNER_ID='53258b8b-2f10-4c07-9b18-aac9c4981288';
 const ownerTag=id=>id===OWNER_ID?'<span class="owner">Owner</span>':'';
 const $=id=>document.getElementById(id);
@@ -461,13 +494,38 @@ const DB={
   },
   async like(id){
     const s=getSess();
-    if(REMOTE){await rq('/rest/v1/script_likes',{method:'POST',body:{script_id:id,user_id:s.id},headers:{Prefer:'return=minimal'}});return}
+    if(REMOTE){await rq('/rest/v1/script_likes',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username},headers:{Prefer:'return=minimal'}});return}
     const all=LS.get('spl_likes',{}),a=all[id]||[];if(!a.includes(s.id))a.push(s.id);all[id]=a;LS.set('spl_likes',all);
+    const meta=LS.get('spl_likemeta',[]).filter(m=>!(m.script_id===id&&m.user_id===s.id));meta.push({script_id:id,user_id:s.id,author:s.username,created_at:new Date().toISOString()});LS.set('spl_likemeta',meta);
   },
   async unlike(id){
     const s=getSess();
     if(REMOTE){await rq(`/rest/v1/script_likes?script_id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(s.id)}`,{method:'DELETE'});return}
     const all=LS.get('spl_likes',{});all[id]=(all[id]||[]).filter(x=>x!==s.id);LS.set('spl_likes',all);
+    LS.set('spl_likemeta',LS.get('spl_likemeta',[]).filter(m=>!(m.script_id===id&&m.user_id===s.id)));
+  },
+  async notifs(){
+    const s=getSess();if(!s)return[];
+    const mine=await DB.mine();
+    if(!mine.length)return[];
+    const ids=mine.map(x=>x.id),titles={};
+    mine.forEach(x=>titles[x.id]=x.title);
+    let likes,coms;
+    if(REMOTE){
+      const list=ids.map(encodeURIComponent).join(','),me=encodeURIComponent(s.id);
+      [likes,coms]=await Promise.all([
+        rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`),
+        rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
+      ]);
+    }else{
+      likes=LS.get('spl_likemeta',[]).filter(l=>ids.includes(l.script_id)&&l.user_id!==s.id);
+      coms=LS.get('spl_comments',[]).filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
+    }
+    const out=[
+      ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
+      ...coms.map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
+    ];
+    return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
   async comments(id){
     if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at&order=created_at.desc&limit=100`);
@@ -488,18 +546,63 @@ const DB={
 };
 
 function closeMenu(){$('menu').classList.add('hidden');$('tMenu').classList.remove('open')}
-$('tMenu').onclick=e=>{e.stopPropagation();const o=!$('menu').classList.toggle('hidden');$('tMenu').classList.toggle('open',o)};
+$('tMenu').onclick=e=>{e.stopPropagation();closeNotif();const o=!$('menu').classList.toggle('hidden');$('tMenu').classList.toggle('open',o)};
 $('mOut').onclick=()=>{Auth.logout();toast('Logged out');route()};
 $('menu').onclick=e=>{if(e.target.closest('a,button'))closeMenu()};
 document.addEventListener('click',e=>{if(!e.target.closest('#menu'))closeMenu()});
 document.addEventListener('click',e=>{const d=$('sDrop');if(d&&!e.target.closest('.sbw'))d.classList.add('hidden')});
 $('tSearch').onclick=()=>{go('home');setTimeout(()=>{const i=$('hQ');if(i){i.focus();i.scrollIntoView({block:'center'})}},60)};
 
+
+let notifs=[],nSince=0;
+const nKey=()=>{const s=getSess();return s?'spl_nread_'+s.id:''};
+function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return notifs.filter(n=>new Date(n.created_at).getTime()>t).length}
+function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
+function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
+function nRender(){
+  const p=$('nPanel');
+  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes and comments on your scripts.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='like'?'liked':'commented on'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes and comments on your scripts show up here.</div>'}`;
+}
+async function nLoad(){
+  if(!getSess()){notifs=[];nBadge();return}
+  try{notifs=await DB.notifs()}catch(e){}
+  nBadge();
+  if(!$('nPanel').classList.contains('hidden'))nRender();
+}
+$('tBell').onclick=e=>{
+  e.stopPropagation();closeMenu();
+  const p=$('nPanel');
+  if(!p.classList.contains('hidden')){closeNotif();return}
+  const k=nKey();
+  nSince=k?LS.get(k,0):0;
+  nRender();
+  p.classList.remove('hidden');$('tBell').classList.add('open');
+  if(k){LS.set(k,Date.now());nBadge()}
+  nLoad();
+};
+$('nPanel').onclick=e=>{if(e.target.closest('a'))closeNotif()};
+document.addEventListener('click',e=>{if(!e.target.closest('#nPanel'))closeNotif()});
+setInterval(nLoad,60000);
+
+function ask(title,text,label='Delete'){
+  return new Promise(res=>{
+    const o=document.createElement('div');o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true"><div class="mic">${ICON_TRASH}</div><h3>${esc(title)}</h3><p>${esc(text)}</p><div class="mbtn"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn danger" data-r="1">${esc(label)}</button></div></div>`;
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(false)};
+    o.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>done(b.dataset.r==='1'));
+    document.body.appendChild(o);
+    o.querySelector('[data-r="0"]').focus();
+  });
+}
+
 function route(){
   const h=location.hash.slice(1)||'home',[p,arg]=h.split('/');
   document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
   const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
-  closeMenu();
+  closeMenu();closeNotif();nLoad();
   ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,script:()=>pageScript(arg)}[p]||pageHome)();
   window.scrollTo(0,0);
 }
@@ -675,7 +778,7 @@ async function pageScript(id){
     if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
     if(own||admin){
       if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
-      $('delBtn').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
+      $('delBtn').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
   }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
 }
@@ -738,7 +841,7 @@ async function initComments(it){
     const cur=getSess();
     box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      if(!confirm('Delete this comment?'))return;
+      if(!await ask('Delete this comment?','This comment will be removed for everyone.'))return;
       try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
     });
   };
@@ -885,7 +988,7 @@ async function pageMine(){
     list.forEach(it=>{
       const d=document.createElement('div');d.className='item';
       d.innerHTML=`<img src="${esc(safeUrl(it.icon))}" alt=""><div class="meta"><b>${esc(it.title)}</b><small>${esc(it.game_name||'Universal')}, ${fmt(it.views)} views, ${esc(timeAgo(it.created_at))}</small></div><a class="btn sec" href="#script/${encodeURIComponent(it.id)}">Open</a><button class="btn danger">Delete</button>`;
-      d.querySelector('button').onclick=async()=>{if(!confirm('Delete this script?'))return;try{await DB.remove(it.id);toast('Script deleted');pageMine()}catch(e){toast(e.message,1)}};
+      d.querySelector('button').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');pageMine()}catch(e){toast(e.message,1)}};
       $('list').appendChild(d);
     });
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
@@ -1061,7 +1164,7 @@ function renderProfile(mine){
       }catch(e){toast(e.message,1)}
     });
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      if(!confirm('Delete this script?'))return;
+      if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;
       try{await DB.remove(b.dataset.d);toast('Script deleted');pageAccount()}catch(e){toast(e.message,1)}
     });
   };
