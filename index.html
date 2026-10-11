@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -327,7 +326,7 @@ async function rq(path,{method='GET',body,headers={},auth=true,retry=true}={}){
   const t=await r.text();return t?JSON.parse(t):null;
 }
 async function refreshTok(){const s=getSess();try{const j=await rq('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:s.refresh},auth:false,retry:false});LS.set('spl_sess',{...s,token:j.access_token,refresh:j.refresh_token});return true}catch(e){LS.set('spl_sess',null);return false}}
-const sessFrom=j=>({id:j.user.id,email:j.user.email,username:(j.user.user_metadata&&j.user.user_metadata.username)||j.user.email.split('@')[0],created:j.user.created_at,token:j.access_token,refresh:j.refresh_token});
+const sessFrom=j=>{const m=j.user.user_metadata||{},em=j.user.email||'';return{id:j.user.id,email:em,username:String(m.username||(m.custom_claims&&m.custom_claims.global_name)||m.full_name||m.name||m.preferred_username||em.split('@')[0]||'user').slice(0,30),created:j.user.created_at,token:j.access_token,refresh:j.refresh_token}};
 
 const Auth={
   async register(email,username,password){
@@ -348,6 +347,7 @@ const Auth={
     if(!u||await sha(u.salt+password)!==u.hash)throw new Error('Wrong email or password');
     LS.set('spl_sess',{id:u.email,email:u.email,username:u.username,created:u.created});
   },
+  discord(){location.href=CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/authorize?provider=discord&redirect_to='+encodeURIComponent(location.origin+location.pathname)},
   logout(){LS.set('spl_sess',null)},
   async changePassword(oldP,newP){
     if(REMOTE){await rq('/auth/v1/user',{method:'PUT',body:{password:newP}});return}
@@ -774,6 +774,12 @@ async function pageAccount(){
     renderProfile(mine);
     return;
   }
+  if(REMOTE){
+    $('app').innerHTML=`<div class="join"><h1>Log in with Discord</h1><p>No password needed. Publish scripts, track views and manage everything in one place.</p></div>
+    <div class="card" style="max-width:420px;margin-top:16px"><button class="btn" id="dcBtn" style="width:100%;background:#5865F2">Continue with Discord</button><div id="lmsg"></div></div>`;
+    $('dcBtn').onclick=()=>Auth.discord();
+    return;
+  }
   $('app').innerHTML=`<div class="join"><h1>Create your account</h1><p>Free. Publish scripts, track views and manage everything in one place.</p></div>
     <div class="grid2 eq" style="margin-top:16px">
     <div class="card"><h2>Login</h2><label>Email</label><input id="le" type="email"><label>Password</label><input type="password" id="lp">
@@ -808,10 +814,10 @@ function renderProfile(mine){
       <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
       <div class="actions"><button class="btn" id="saveP">Save profile</button></div><div id="pmsg"></div></div>
     <div style="display:grid;gap:18px">
-      <div class="card"><h2>Change password</h2>
-        ${REMOTE?'':'<label>Current password</label><input type="password" id="op">'}
+      ${REMOTE?'':`<div class="card"><h2>Change password</h2>
+        <label>Current password</label><input type="password" id="op">
         <label>New password (min. 8 characters)</label><input type="password" id="np">
-        <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>
+        <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>`}
       <div class="card"><h2>Session</h2><div class="actions" style="margin-top:0"><button class="btn danger" id="logout">Log out</button></div></div>
     </div></div>
   <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
@@ -867,12 +873,28 @@ function renderProfile(mine){
   $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
   drawMine();
   $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
-  $('cp').onclick=async()=>{
+  if($('cp'))$('cp').onclick=async()=>{
     if($('np').value.length<8){$('msg').innerHTML='<div class="err">New password is too short.</div>';return}
     try{await Auth.changePassword(REMOTE?'':$('op').value,$('np').value);$('msg').innerHTML='<div class="good">Password updated.</div>'}catch(e){$('msg').innerHTML=`<div class="err">${esc(e.message)}</div>`}
   };
 }
-route();
+async function oauthReturn(){
+  const qs=new URLSearchParams(location.search),hs=new URLSearchParams(location.hash.slice(1));
+  const hasTok=hs.get('access_token'),errMsg=hs.get('error_description')||qs.get('error_description');
+  if(!hasTok&&!errMsg)return;
+  history.replaceState(null,'',location.pathname+'#home');
+  if(errMsg){toast(errMsg.replace(/\+/g,' '),1);return}
+  try{
+    const token=hs.get('access_token'),refresh=hs.get('refresh_token');
+    const r=await fetch(CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+token}});
+    if(!r.ok)throw new Error('Login failed');
+    const u=await r.json();
+    LS.set('spl_sess',sessFrom({user:u,access_token:token,refresh_token:refresh}));
+    try{await Prof.sync()}catch(e){}
+    toast('Logged in');
+  }catch(e){toast(e.message,1)}
+}
+oauthReturn().finally(route);
 </script>
 </body>
 </html>
