@@ -264,6 +264,18 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,Consolas,mono
 .cm .ch small{color:var(--mut);font-size:12px}
 .cm .ch .dn{margin-left:auto;color:var(--bad);font-size:13px;font-weight:700}
 .cm .ct{margin-top:4px;white-space:pre-wrap;word-break:break-word;color:#e6dce3}
+.owner{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;background:linear-gradient(135deg,#ff4d9d,#f5b84b);color:#fff;vertical-align:middle;line-height:1.6}
+.sbw{position:relative}
+.sdrop{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:25;background:var(--s1);border:1px solid var(--line);border-radius:18px;padding:12px;box-shadow:0 18px 40px rgba(0,0,0,.55);max-height:60vh;overflow:auto;display:grid;gap:6px}
+.sdrop .sl{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin:6px 4px 2px}
+.sdrop .chips{padding:0 2px 4px}
+.sg{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:12px;text-align:left;width:100%}
+.sg:hover{background:var(--s2)}
+.sg img,.sg .ph{width:38px;height:38px;border-radius:9px;object-fit:cover;background:var(--s3);flex:0 0 auto}
+.sg span{min-width:0;display:grid}
+.sg b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sg.all{color:var(--pink);font-weight:700;border-top:1px solid var(--line);border-radius:0 0 12px 12px;margin-top:4px}
 #toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:99;display:grid;gap:8px;justify-items:center}
 .toast{background:var(--s3);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600}
 .toast.bad{border-color:var(--bad)}
@@ -306,6 +318,8 @@ const SUGG=['Blox Fruits','Brookhaven','Adopt Me','Grow a Garden','Steal a Brain
 const PAGE=12;
 const ICON_EYE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.8-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.2-8 11-8 11z"/></svg>';
+const OWNER_ID='53258b8b-2f10-4c07-9b18-aac9c4981288';
+const ownerTag=id=>id===OWNER_ID?'<span class="owner">Owner</span>':'';
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -385,7 +399,7 @@ const DB={
     const match=x=>features.every(f=>(x.features||[]).includes(f))&&(!executor||(x.executors||[]).includes(executor));
     const keyOk=x=>key==='all'||(key==='no'&&!x.key_system&&!x.paid)||(key==='yes'&&!!x.key_system)||(key==='paid'&&!!x.paid);
     if(REMOTE){
-      let p=`/rest/v1/scripts?select=id,title,game_name,icon,features,executors,key_system,paid,views,author,created_at&order=${sort==='top'?'views.desc':'created_at.desc'}`;
+      let p=`/rest/v1/scripts?select=id,user_id,title,game_name,icon,features,executors,key_system,paid,views,author,created_at&order=${sort==='top'?'views.desc':'created_at.desc'}`;
       p+=hasF?'&limit=400':`&limit=${PAGE+1}&offset=${page*PAGE}`;
       const c=q.replace(/[,()*%]/g,' ').trim();
       if(c)p+=`&or=(title.ilike.*${encodeURIComponent(c)}*,game_name.ilike.*${encodeURIComponent(c)}*)`;
@@ -478,6 +492,7 @@ $('tMenu').onclick=e=>{e.stopPropagation();const o=!$('menu').classList.toggle('
 $('mOut').onclick=()=>{Auth.logout();toast('Logged out');route()};
 $('menu').onclick=e=>{if(e.target.closest('a,button'))closeMenu()};
 document.addEventListener('click',e=>{if(!e.target.closest('#menu'))closeMenu()});
+document.addEventListener('click',e=>{const d=$('sDrop');if(d&&!e.target.closest('.sbw'))d.classList.add('hidden')});
 $('tSearch').onclick=()=>{go('home');setTimeout(()=>{const i=$('hQ');if(i){i.focus();i.scrollIntoView({block:'center'})}},60)};
 
 function route(){
@@ -496,7 +511,7 @@ const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
 const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
 function cardHTML(it,link=true){
   const img=safeUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
-  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${esc(it.author||'you')}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
+  return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${esc(it.author||'you')}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
 }
 const fcount=()=>(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
 function syncFilters(){
@@ -533,7 +548,7 @@ function syncFilters(){
 function pageHome(){
   $('app').innerHTML=`
   ${REMOTE?'':'<div class="note">Demo mode: scripts are saved only in this browser. Connect Supabase (see supabase-setup.sql) so everyone sees the same scripts.</div>'}
-  <div class="sb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="hQ" placeholder="Search scripts or games" autocomplete="off"><button class="btn sec" id="hGo">Go</button></div>
+  <div class="sbw"><div class="sb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="hQ" placeholder="Search scripts or games" autocomplete="off"><button class="btn sec" id="hGo">Go</button></div><div class="sdrop hidden" id="sDrop"></div></div>
   <div class="hot hidden" id="hot"><div class="rowh"><h2><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4-2 5-2 8 0 1 .6 2 1.5 2.4C10 13 9 14.5 9 16a3 3 0 0 0 6 0c0-2-1-3-1-4.5 2 .5 4 2.5 4 5.5a6 6 0 0 1-12 0c0-4 4-6 6-15z"/></svg>Hot games</h2><button class="lnk" id="hAll">Show all</button></div><div class="hg" id="gChips"></div></div>
   <div class="rowh big"><h1 id="hTitle">Latest scripts</h1>
     <button class="btn sec fs" id="fsBtn" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Filters<span class="fcount hidden" id="fcount"></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
@@ -549,7 +564,48 @@ function pageHome(){
   <div id="hStatus" class="hint"></div><div class="feed" id="hGrid"></div>
   <div class="actions" style="justify-content:center"><button class="btn sec hidden" id="hMore">Load more</button></div>`;
   $('hQ').value=home.q;
-  const run=()=>{home.q=$('hQ').value.trim();syncGames();homeLoad(true)};
+  const drop=$('sDrop');
+  let sSeq=0,sTimer=null;
+  const hideDrop=()=>{sSeq++;clearTimeout(sTimer);drop.classList.add('hidden')};
+  const applyQ=v=>{home.q=v;$('hQ').value=v;hideDrop();syncGames();homeLoad(true)};
+  const bindDrop=()=>{
+    drop.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>applyQ(b.dataset.q));
+    drop.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{hideDrop();go('script/'+b.dataset.s)});
+  };
+  const showExamples=()=>{
+    const games=(home.top.length?home.top.map(g=>g.name):SUGG).slice(0,8);
+    const feats=['Auto Farm','Anti AFK','ESP','Infinite Jump','Teleport','Speed Boost','No key'];
+    drop.innerHTML=`<div class="sl">Try searching for</div><div class="chips">${games.map(n=>`<button type="button" class="chip" data-q="${esc(n)}">${esc(n)}</button>`).join('')}</div><div class="sl">Popular keywords</div><div class="chips">${feats.map(n=>`<button type="button" class="chip" data-q="${esc(n)}">${esc(n)}</button>`).join('')}</div>`;
+    drop.classList.remove('hidden');
+    bindDrop();
+  };
+  const suggest=async v=>{
+    const seq=++sSeq;
+    try{
+      const r=await DB.list({q:v,sort:'top',page:0});
+      if(seq!==sSeq||document.activeElement!==$('hQ'))return;
+      const seen=new Set(),games=[];
+      r.items.forEach(it=>{if(it.game_name&&!seen.has(it.game_name)&&games.length<3){seen.add(it.game_name);games.push({name:it.game_name,icon:it.icon})}});
+      const items=r.items.slice(0,5);
+      const thumb=u=>safeUrl(u)?`<img src="${esc(safeUrl(u))}" alt="">`:'<span class="ph"></span>';
+      let html='';
+      if(games.length)html+=`<div class="sl">Games</div>${games.map(g=>`<button type="button" class="sg" data-q="${esc(g.name)}">${thumb(g.icon)}<span><b>${esc(g.name)}</b><small>Show all scripts for this game</small></span></button>`).join('')}`;
+      if(items.length)html+=`<div class="sl">Scripts</div>${items.map(it=>`<button type="button" class="sg" data-s="${esc(it.id)}">${thumb(it.icon)}<span><b>${esc(it.title)}</b><small>${esc(it.game_name||'Universal')}, ${fmt(it.views)} views</small></span></button>`).join('')}`;
+      if(!games.length&&!items.length)html+='<div class="sl">No suggestions</div>';
+      html+=`<button type="button" class="sg all" data-q="${esc(v)}">Search for "${esc(v)}"</button>`;
+      drop.innerHTML=html;
+      drop.classList.remove('hidden');
+      bindDrop();
+    }catch(e){}
+  };
+  $('hQ').addEventListener('focus',()=>{if(!$('hQ').value.trim())showExamples()});
+  $('hQ').addEventListener('input',()=>{
+    clearTimeout(sTimer);
+    const v=$('hQ').value.trim();
+    if(!v){showExamples();return}
+    sTimer=setTimeout(()=>suggest(v),200);
+  });
+  const run=()=>{hideDrop();home.q=$('hQ').value.trim();syncGames();homeLoad(true)};
   $('hGo').onclick=run;$('hQ').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
   $('fsBtn').onclick=()=>{const o=$('fp').classList.toggle('hidden');$('fsBtn').classList.toggle('open',!o);$('fsBtn').setAttribute('aria-expanded',String(!o))};
   document.querySelectorAll('#sSort button').forEach(b=>b.onclick=()=>{home.sort=b.dataset.v;syncFilters();homeLoad(true)});
@@ -599,7 +655,7 @@ async function pageScript(id){
     DB.view(id);
     const s=getSess(),own=s&&s.id===it.user_id,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString()}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString()}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
       ${own?'<div class="actions" style="margin:0"><button class="btn sec" id="edBtn">Edit</button><button class="btn danger" id="delBtn">Delete</button></div>':''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
@@ -611,7 +667,7 @@ async function pageScript(id){
     <section class="card cmsec"><h2>Comments<span class="cnt" id="cmCount">0</span></h2><div id="cmForm"></div><div class="cmlist" id="cmList"><div class="hint">Loading comments...</div></div></section>
     <div id="related"></div>`;
     $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString()+' characters';
-    Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'}).catch(()=>{});
+    Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML=avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span>'+ownerTag(it.user_id)}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
     initLikes(it);
@@ -648,7 +704,8 @@ async function initLikes(it){
 async function initComments(it){
   const form=$('cmForm');if(!form)return;
   const s=getSess();
-  let list=[],profs={},posting=false,last=0;
+  const COOLDOWN=10*60*1000;
+  let list=[],profs={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0;
   if(s){
     form.innerHTML=`<div class="cmform"><textarea id="cmIn" maxlength="500" placeholder="Write a comment..."></textarea><div class="cmfoot"><span class="hint" id="cmN">0 / 500</span><button type="button" class="btn" id="cmPost">Post comment</button></div><div id="cmMsg"></div></div>`;
     $('cmIn').addEventListener('input',()=>{$('cmN').textContent=$('cmIn').value.length+' / 500'});
@@ -656,11 +713,13 @@ async function initComments(it){
       const v=$('cmIn').value.trim(),m=$('cmMsg');
       if(!v){m.innerHTML='<div class="err">Write something first.</div>';return}
       if(posting)return;
-      if(Date.now()-last<3000){m.innerHTML='<div class="err">Please wait a moment before posting again.</div>';return}
+      const wait=COOLDOWN-(Date.now()-last);
+      if(wait>0){m.innerHTML=`<div class="err">Cooldown active. You can comment again in ${Math.ceil(wait/60000)} min.</div>`;return}
       posting=true;$('cmPost').disabled=true;m.innerHTML='';
       try{
         const c=await DB.addComment(it.id,v);
         last=Date.now();
+        LS.set('spl_cm_'+s.id,last);
         const cur=getSess();
         if(cur&&cur.profile)profs[cur.id]=cur.profile;
         list.unshift(c);
@@ -677,7 +736,7 @@ async function initComments(it){
     $('cmCount').textContent=list.length;
     if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
     const cur=getSess();
-    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b><small>${esc(timeAgo(c.created_at))}</small>${cur&&cur.id===c.user_id?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&cur.id===c.user_id?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
       if(!confirm('Delete this comment?'))return;
       try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
@@ -729,7 +788,7 @@ function pagePublish(){
   $('clearBtn').onclick=()=>{draft=fresh();saveDraft();pagePublish()};
 }
 function codeInfo(){const el=$('codeInfo');if(el)el.textContent=draft.code?`${draft.code.split('\n').length} lines, ${draft.code.length.toLocaleString()} characters`:''}
-function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:g?g.icon:'',views:0,author:s?s.username:'you',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
+function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:g?g.icon:'',views:0,author:s?s.username:'you',user_id:s?s.id:'',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
 function addFeat(){const v=$('featIn').value.trim().slice(0,40);if(!v)return;if(!draft.features.includes(v))draft.features.push(v);$('featIn').value='';saveDraft();renderChips();renderPreview()}
 function renderChips(){
   const box=$('featChips');box.innerHTML='';
@@ -939,7 +998,7 @@ function renderProfile(mine){
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
-    <div class="pinfo"><h1>${esc(s.username)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
+    <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
     <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
   <div class="grid2 eq">
     <div class="card"><h2>Edit profile</h2>
@@ -993,7 +1052,7 @@ function renderProfile(mine){
     document.querySelectorAll('#mSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===mSort));
     const list=[...mine].sort((x,y)=>mSort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at)),box=$('myFeed');
     if(!list.length){box.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>Nothing published yet</h3>Your scripts will show up here.<div class="actions" style="justify-content:center"><a class="btn" href="#publish">Publish a script</a></div></div>';return}
-    box.innerHTML=list.map(it=>`<div class="mc">${cardHTML({...it,author:s.username})}<div class="mcact"><button type="button" class="btn sec" data-e="${esc(it.id)}">Edit</button><button type="button" class="btn danger" data-d="${esc(it.id)}">Delete</button></div></div>`).join('');
+    box.innerHTML=list.map(it=>`<div class="mc">${cardHTML({...it,author:s.username,user_id:s.id})}<div class="mcact"><button type="button" class="btn sec" data-e="${esc(it.id)}">Edit</button><button type="button" class="btn danger" data-d="${esc(it.id)}">Delete</button></div></div>`).join('');
     box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
       try{
         const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
