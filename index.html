@@ -1148,12 +1148,22 @@ async function pageMine(){
 
 const AV_COLORS=['#ff4d9d','#a855f7','#3b82f6','#14b8a6','#f59e0b','#ef4444'];
 const ICON_USER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>';
+const T_RE=/^(\d{1,3}(?:\.\d{1,2})?),(\d{1,3}(?:\.\d{1,2})?),(\d(?:\.\d{1,2})?)$/;
+function parseT(s){
+  const m=T_RE.exec(s||'');
+  if(!m)return{x:50,y:50,z:1};
+  return{x:Math.min(100,+m[1]),y:Math.min(100,+m[2]),z:Math.min(4,Math.max(1,+m[3]))};
+}
+const fmtT=t=>[t.x,t.y,t.z].map(n=>Math.round(n*100)/100).join(',');
+const imgPosT=t=>`object-position:${t.x}% ${t.y}%;transform:scale(${t.z});transform-origin:${t.x}% ${t.y}%`;
+const imgPos=s=>imgPosT(parseT(s));
 const dataImg=v=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v||'')?v:'';
-const bannerCSS=(p,col)=>{const b=dataImg(p&&p.banner);return b?`background:${col} url('${esc(b)}') center/cover no-repeat`:`background:${col}`};
+const bannerCSS=(p,col)=>`background:${col}`;
+const bannerImg=p=>{const b=dataImg(p&&p.banner);return b?`<img class="pbi" src="${esc(b)}" alt="" style="${imgPos(p.banner_t)}">`:''};
 function avatarHTML(p,name,size){
   p=p||{};
   const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],img=dataImg(p.avatar);
-  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="">`:esc((name||'?')[0].toUpperCase())}</span>`;
+  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="" style="${imgPos(p.avatar_t)}">`:esc((name||'?')[0].toUpperCase())}</span>`;
 }
 function headerSync(){
   const a=$('tAcc');if(!a)return;
@@ -1167,9 +1177,9 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color,username,banner`);return r[0]||{}}catch(e){return{}}}
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,avatar_t,bio,link,color,username,banner,banner_t`);return r[0]||{}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
-    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',banner:u.banner||''}:{};
+    return u?{avatar:u.avatar||'',avatar_t:u.avatar_t||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',banner:u.banner||'',banner_t:u.banner_t||''}:{};
   },
   async many(ids){
     const out={};
@@ -1177,11 +1187,11 @@ const Prof={
     if(REMOTE){
       const ok=ids.filter(isUUID);
       if(!ok.length)return out;
-      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,color`);r.forEach(p=>out[p.id]=p)}catch(e){}
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,avatar_t,color`);r.forEach(p=>out[p.id]=p)}catch(e){}
       return out;
     }
     const all=LS.get('spl_users',{});
-    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',color:u.color||''}});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',avatar_t:u.avatar_t||'',color:u.color||''}});
     return out;
   },
   async sync(){
@@ -1189,7 +1199,7 @@ const Prof={
     const p=await Prof.load(s.id);
     let created=s.created;
     try{if(REMOTE){const u=await rq('/auth/v1/user');created=u.created_at}else{const u=LS.get('spl_users',{})[s.id];if(u)created=u.created}}catch(e){}
-    LS.set('spl_sess',{...getSess(),profile:p,created});
+    LS.set('spl_sess',{...getSess(),profile:{...p,banner:''},created});
     headerSync();
     return p;
   },
@@ -1197,50 +1207,99 @@ const Prof={
     const s=getSess();
     if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
     else{const all=LS.get('spl_users',{});if(!all[s.id])throw new Error('Account not found');Object.assign(all[s.id],p);LS.set('spl_users',all)}
-    LS.set('spl_sess',{...getSess(),profile:p});
+    LS.set('spl_sess',{...getSess(),profile:{...p,banner:''}});
     headerSync();
   }
 };
-const GIF_MAX={avatar:500*1024,banner:2560*1024};
-function readGif(file,kind){
-  return new Promise((res,rej)=>{
-    if(file.size>GIF_MAX[kind])return rej(new Error('Animated GIFs for the '+kind+' can be at most '+Math.round(GIF_MAX[kind]/1024)+' KB. Compress or shorten it.'));
-    const fr=new FileReader();
-    fr.onload=()=>res(String(fr.result));
-    fr.onerror=()=>rej(new Error('Could not read this image.'));
-    fr.readAsDataURL(file);
-  });
+const GIF_KEEP={avatar:700*1024,banner:3*1024*1024};
+const GIF_READ_MAX=30*1024*1024;
+function trimGif(u8,max){
+  const sig=String.fromCharCode(u8[0],u8[1],u8[2],u8[3],u8[4],u8[5]);
+  if(sig!=='GIF87a'&&sig!=='GIF89a')throw new Error('This GIF file is not valid.');
+  if(u8.length<=max)return{bytes:u8,cut:false};
+  let p=13;
+  if(u8[10]&0x80)p+=3*(1<<((u8[10]&7)+1));
+  const skip=()=>{while(u8[p]!==0){p+=u8[p]+1;if(p>=u8.length)throw new Error('This GIF file is damaged.')}p++};
+  let end=0,kept=0,total=0,full=false;
+  while(p<u8.length){
+    const b=u8[p];
+    if(b===0x3b)break;
+    if(b===0x21){p+=2;skip()}
+    else if(b===0x2c){
+      const f=u8[p+9];
+      p+=10;
+      if(f&0x80)p+=3*(1<<((f&7)+1));
+      p++;
+      skip();
+      total++;
+      if(!full){if(p+1<=max){kept++;end=p}else full=true}
+    }else throw new Error('This GIF file is damaged.');
+  }
+  if(!kept)throw new Error('Even the first frame of this GIF is too large. Use a smaller GIF.');
+  const out=new Uint8Array(end+1);
+  out.set(u8.subarray(0,end));
+  out[end]=0x3b;
+  return{bytes:out,cut:kept<total,kept,total};
 }
-function readAvatar(file){
+function bytesToB64(u8){
+  let s='';
+  for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function readStatic(file,maxSide){
   return new Promise((res,rej)=>{
-    if(!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type))return rej(new Error('Choose a PNG, JPG, WebP or GIF image.'));
-    if(file.size>8*1024*1024)return rej(new Error('That image is larger than 8 MB.'));
-    if(/^image\/gif$/i.test(file.type))return readGif(file,'avatar').then(res,rej);
     const url=URL.createObjectURL(file),im=new Image();
     im.onload=()=>{
-      const S=192,c=document.createElement('canvas');c.width=c.height=S;
-      const m=Math.min(im.width,im.height),sx=(im.width-m)/2,sy=(im.height-m)/2;
-      c.getContext('2d').drawImage(im,sx,sy,m,m,0,0,S,S);
-      URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.85));
+      const k=Math.min(1,maxSide/Math.max(im.width,im.height)),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(im,0,0,w,h);
+      URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.88));
     };
     im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read this image.'))};
     im.src=url;
   });
 }
-function readBanner(file){
-  return new Promise((res,rej)=>{
-    if(!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type))return rej(new Error('Choose a PNG, JPG, WebP or GIF image.'));
-    if(file.size>8*1024*1024)return rej(new Error('That image is larger than 8 MB.'));
-    if(/^image\/gif$/i.test(file.type))return readGif(file,'banner').then(res,rej);
-    const url=URL.createObjectURL(file),im=new Image();
-    im.onload=()=>{
-      const W=960,H=240,c=document.createElement('canvas');c.width=W;c.height=H;
-      const r=W/H;let sw=im.width,sh=sw/r;if(sh>im.height){sh=im.height;sw=sh*r}
-      c.getContext('2d').drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,W,H);
-      URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.8));
+async function readImg(file,kind){
+  if(!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type))throw new Error('Choose a PNG, JPG, WebP or GIF image.');
+  if(/^image\/gif$/i.test(file.type)){
+    if(file.size>GIF_READ_MAX)throw new Error('That GIF is larger than 30 MB.');
+    const r=trimGif(new Uint8Array(await file.arrayBuffer()),GIF_KEEP[kind]);
+    return{src:'data:image/gif;base64,'+bytesToB64(r.bytes),note:r.cut?'GIF trimmed to the first '+r.kept+' of '+r.total+' frames to fit.':''};
+  }
+  if(file.size>8*1024*1024)throw new Error('That image is larger than 8 MB.');
+  return{src:await readStatic(file,kind==='avatar'?640:1600),note:''};
+}
+const clampN=(n,a,b)=>Math.min(b,Math.max(a,n));
+function adjustImage(kind,src,tStr){
+  return new Promise(res=>{
+    let t=parseT(tStr),drag=null;
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md ae" role="dialog" aria-modal="true"><h3>${kind==='avatar'?'Adjust profile photo':'Adjust banner'}</h3><p>Drag the image to move it. Use the slider or the mouse wheel to zoom.</p><div class="aefr ${kind}" id="aeF"><img id="aeI" alt="" draggable="false" src="${esc(src)}"></div><label>Zoom</label><input type="range" id="aeZ" min="1" max="4" step="0.01"><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" id="aeR">Reset</button><button type="button" class="btn sec" id="aeC">Cancel</button><button type="button" class="btn" id="aeA">Apply</button></div></div>`;
+    document.body.appendChild(o);
+    const F=$('aeF'),I=$('aeI'),Z=$('aeZ');
+    const paintT=()=>{I.style.cssText=imgPosT(t);Z.value=t.z};
+    const done=v=>{document.removeEventListener('keydown',key);o.remove();res(v)};
+    const key=e=>{if(e.key==='Escape')done(null)};
+    document.addEventListener('keydown',key);
+    F.onpointerdown=e=>{drag={x:e.clientX,y:e.clientY,tx:t.x,ty:t.y};F.setPointerCapture(e.pointerId);F.classList.add('drag')};
+    F.onpointermove=e=>{
+      if(!drag)return;
+      const r=F.getBoundingClientRect(),nw=I.naturalWidth||1,nh=I.naturalHeight||1,c=Math.max(r.width/nw,r.height/nh);
+      const ox=nw*c*t.z-r.width,oy=nh*c*t.z-r.height;
+      if(ox>.5)t.x=clampN(drag.tx-(e.clientX-drag.x)/ox*100,0,100);
+      if(oy>.5)t.y=clampN(drag.ty-(e.clientY-drag.y)/oy*100,0,100);
+      paintT();
     };
-    im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read this image.'))};
-    im.src=url;
+    const up=()=>{drag=null;F.classList.remove('drag')};
+    F.onpointerup=up;F.onpointercancel=up;
+    F.addEventListener('wheel',e=>{e.preventDefault();t.z=clampN(t.z*(e.deltaY<0?1.06:.94),1,4);paintT()},{passive:false});
+    Z.oninput=()=>{t.z=+Z.value;paintT()};
+    $('aeR').onclick=()=>{t={x:50,y:50,z:1};paintT()};
+    $('aeC').onclick=()=>done(null);
+    $('aeA').onclick=()=>done(fmtT(t));
+    o.onclick=e=>{if(e.target===o)done(null)};
+    paintT();
   });
 }
 const onAccount=()=>(location.hash.slice(1)||'home').split('/')[0]==='account';
@@ -1279,7 +1338,7 @@ async function pageAccount(){
 function renderProfile(mine){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
   const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
-  const work={avatar:dataImg(p.avatar),banner:dataImg(p.banner),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
+  const work={avatar:dataImg(p.avatar),banner:dataImg(p.banner),avatar_t:fmtT(parseT(p.avatar_t)),banner_t:fmtT(parseT(p.banner_t)),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
@@ -1288,9 +1347,9 @@ function renderProfile(mine){
   <div class="grid2 eq">
     <div class="card"><h2>Edit profile</h2>
       <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
-        <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG, WebP or animated GIF (up to 500 KB). Cropped to a square.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
+        <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG, WebP or animated GIF. You can move and zoom it.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk ad hidden" id="avAd">Adjust</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
         <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
-      <div class="aved" style="margin-top:14px"><div class="avtxt"><b>Profile banner</b><p class="hint">PNG, JPG, WebP or animated GIF (up to 2.5 MB). Cropped to 4:1.</p><div class="avact"><button type="button" class="lnk up" id="bnUp">Upload banner</button><button type="button" class="lnk dn hidden" id="bnRm">Remove</button></div></div><input type="file" id="bnFile" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
+      <div class="aved" style="margin-top:14px"><div class="avtxt"><b>Profile banner</b><p class="hint">PNG, JPG, WebP or animated GIF. You can move and zoom it.</p><div class="avact"><button type="button" class="lnk up" id="bnUp">Upload banner</button><button type="button" class="lnk ad hidden" id="bnAd">Adjust</button><button type="button" class="lnk dn hidden" id="bnRm">Remove</button></div></div><input type="file" id="bnFile" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
       <label>Accent color</label><div class="swatches" id="sw"></div>
       <label>Bio</label><textarea id="bio" maxlength="160" style="min-height:80px;font-family:inherit" placeholder="What do you make?"></textarea><div class="hint" id="bioN"></div>
       <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
@@ -1306,7 +1365,10 @@ function renderProfile(mine){
   $('bio').value=p.bio||'';$('plinkIn').value=p.link||'';
   const paint=()=>{
     $('pBan').setAttribute('style',bannerCSS(work,work.color));
+    $('pBan').innerHTML=bannerImg(work);
     $('bnRm').classList.toggle('hidden',!work.banner);
+    $('bnAd').classList.toggle('hidden',!work.banner);
+    $('avAd').classList.toggle('hidden',!work.avatar);
     $('pAv').innerHTML=avatarHTML(work,s.username,88);
     $('eAv').innerHTML=avatarHTML(work,s.username,80);
     $('rmBtn').classList.toggle('hidden',!work.avatar);
@@ -1314,29 +1376,40 @@ function renderProfile(mine){
     $('sw').querySelectorAll('button').forEach(b=>b.onclick=()=>{work.color=b.dataset.c;paint()});
     $('bioN').textContent=$('bio').value.length+' / 160';
   };
+  let bTouch=false;
   paint();
+  if(!work.banner)Prof.load(s.id).then(f=>{const b=dataImg(f.banner);if(bTouch||!b)return;work.banner=b;work.banner_t=fmtT(parseT(f.banner_t));paint()}).catch(()=>{});
   $('bio').addEventListener('input',()=>{$('bioN').textContent=$('bio').value.length+' / 160';$('pBio').textContent=$('bio').value});
   $('upBtn').onclick=()=>$('file').click();
   $('upLink').onclick=()=>$('file').click();
   $('file').onchange=async()=>{
     const f=$('file').files[0];if(!f)return;
-    try{work.avatar=await readAvatar(f);paint()}catch(e){toast(e.message,1)}
+    try{
+      const r=await readImg(f,'avatar'),t=await adjustImage('avatar',r.src,'50,50,1');
+      if(t!==null){work.avatar=r.src;work.avatar_t=t;paint();if(r.note)toast(r.note)}
+    }catch(e){toast(e.message,1)}
     $('file').value='';
   };
-  $('rmBtn').onclick=()=>{work.avatar='';paint()};
+  $('rmBtn').onclick=()=>{work.avatar='';work.avatar_t='50,50,1';paint()};
+  $('avAd').onclick=async()=>{const t=await adjustImage('avatar',work.avatar,work.avatar_t);if(t!==null){work.avatar_t=t;paint()}};
+  $('bnAd').onclick=async()=>{bTouch=true;const t=await adjustImage('banner',work.banner,work.banner_t);if(t!==null){work.banner_t=t;paint()}};
   $('bnUp').onclick=()=>$('bnFile').click();
   $('bnFile').onchange=async()=>{
     const f=$('bnFile').files[0];if(!f)return;
-    try{work.banner=await readBanner(f);paint()}catch(e){toast(e.message,1)}
+    bTouch=true;
+    try{
+      const r=await readImg(f,'banner'),t=await adjustImage('banner',r.src,'50,50,1');
+      if(t!==null){work.banner=r.src;work.banner_t=t;paint();if(r.note)toast(r.note)}
+    }catch(e){toast(e.message,1)}
     $('bnFile').value='';
   };
-  $('bnRm').onclick=()=>{work.banner='';paint()};
+  $('bnRm').onclick=()=>{bTouch=true;work.banner='';work.banner_t='50,50,1';paint()};
   $('saveP').onclick=async()=>{
     const link=$('plinkIn').value.trim(),m=$('pmsg');
     if(link&&!safeUrl(link)){m.innerHTML='<div class="err">The link must start with https://</div>';return}
     $('saveP').disabled=true;
     try{
-      await Prof.save({avatar:work.avatar,banner:work.banner,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
+      await Prof.save({avatar:work.avatar,avatar_t:work.avatar_t,banner:work.banner,banner_t:work.banner_t,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
       m.innerHTML='';toast('Profile saved');renderProfile(mine);
     }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
     $('saveP').disabled=false;
@@ -1412,7 +1485,7 @@ async function pageUser(id){
     const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],views=list.reduce((a,x)=>a+(x.views||0),0),plink=safeUrl(p.link);
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
-    $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}"></div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
+    $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}">${bannerImg(p)}</div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
       <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
       <div class="pstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
