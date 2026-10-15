@@ -64,6 +64,8 @@ const ICON_TIER={
   t3:svgI('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
   t4:svgI('<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>')
 };
+const ICON_CODE=svgI('<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>');
+const ICON_CAL=svgI('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>');
 const ICON_FLAG=svgI('<path d="M5 22V4M5 4h12l-2 4 2 4H5"/>');
 const VERIFY_WAIT=10*60000;
 const REPORT_REASONS=['Malicious or harmful code','Stolen script','Scam or fake','Inappropriate content','Other'];
@@ -1343,7 +1345,7 @@ function renderProfile(mine){
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
     <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}<div id="vrArea"></div></div>
-    <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
+    <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${mine.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div><div><i class="si">${ICON_CAL}</i><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
   <div class="grid2 eq">
     <div class="card"><h2>Edit profile</h2>
       <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
@@ -1487,7 +1489,7 @@ async function pageUser(id){
     const admin=!!s&&s.id===OWNER_ID;
     $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}">${bannerImg(p)}</div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
       <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
-      <div class="pstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(first)}</b><span>First script</span></div></div></div></section>
+      <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${list.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div><div><i class="si">${ICON_CAL}</i><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
     if(admin){
