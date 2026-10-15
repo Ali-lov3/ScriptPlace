@@ -67,6 +67,9 @@ const ICON_TIER={
 const ICON_FLAG=svgI('<path d="M5 22V4M5 4h12l-2 4 2 4H5"/>');
 const VERIFY_WAIT=10*60000;
 const REPORT_REASONS=['Malicious or harmful code','Stolen script','Scam or fake','Inappropriate content','Other'];
+const ICON_MAIL=svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>');
+const ICON_CLOCK=svgI('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
+const TIMEOUT_OPTS=[[10,'10 minutes'],[60,'1 hour'],[1440,'1 day'],[10080,'7 days'],[43200,'30 days']];
 const UB={},NAMES={};
 const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
 function badgeHTML(id){
@@ -196,6 +199,7 @@ const DB={
     if(REMOTE){
       if(id&&!isUUID(id))throw new Error('This script is from an old demo session and cannot be edited.');
       if(id){const r=await rq(`/rest/v1/scripts?id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:item,headers:{Prefer:'return=representation'}});if(!r||!r[0])throw new Error('Not allowed');return r[0]}
+      await Timeout.guard();
       const r=await rq('/rest/v1/scripts',{method:'POST',body:{...item,user_id:s.id,author:s.username},headers:{Prefer:'return=representation'}});return r[0];
     }
     const all=LS.get('spl_scripts',[]);
@@ -259,6 +263,8 @@ const DB={
       const all=LS.get('spl_scripts',[]);
       reps.forEach(r=>{if(!(r.script_id in titles)){const x=all.find(y=>y.id===r.script_id);if(x)titles[x.id]=x.title}});
     }
+    let vm=[];
+    if(REMOTE){try{vm=await rq(`/rest/v1/user_messages?user_id=eq.${encodeURIComponent(s.id)}&select=kind,body,until,created_at&order=created_at.desc&limit=20`)}catch(e){}}
     let vn=[];
     if(REMOTE){try{vn=await rq(`/rest/v1/verify_notices?user_id=eq.${encodeURIComponent(s.id)}&select=status,reason,created_at&order=created_at.desc&limit=10`)}catch(e){}}
     else vn=LS.get('spl_vnotices',[]).filter(x=>x.user_id===s.id);
@@ -280,6 +286,7 @@ const DB={
       ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
       ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''})),
       ...rp.map(r=>({type:'report',script_id:r.script_id,user_id:r.reporter_id,author:r.reporter,body:r.reason+(r.details?': '+r.details:''),created_at:r.created_at,title:titles[r.script_id]})),
+      ...vm.map(m=>({type:m.kind,script_id:'',user_id:s.id,author:'Owner',body:m.body||'',until:m.until,created_at:m.created_at,title:''})),
       ...vn.map(v=>({type:v.status==='approved'?'verify_ok':'verify_no',script_id:'',user_id:s.id,author:'ScriptPlace',body:v.reason||'',created_at:v.created_at,title:''}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
@@ -290,7 +297,7 @@ const DB={
   },
   async addComment(id,body,parentId){
     const s=getSess(),pid=parentId||null;
-    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body,parent_id:pid},headers:{Prefer:'return=representation'}});return r[0]}
+    if(REMOTE){await Timeout.guard();const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body,parent_id:pid},headers:{Prefer:'return=representation'}});return r[0]}
     const all=LS.get('spl_comments',[]);
     const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,parent_id:pid,created_at:new Date().toISOString()};
     all.push(n);LS.set('spl_comments',all);return n;
@@ -471,11 +478,14 @@ function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return noti
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
 const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
-const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY,report:ICON_FLAG};
-const nHref=n=>n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):(n.type==='verify_ok'||n.type==='verify_no')?'#account':'#script/'+encodeURIComponent(n.script_id);
+const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY,report:ICON_FLAG,message:ICON_MAIL,timeout:ICON_CLOCK,untimeout:ICON_CLOCK};
+const nHref=n=>n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):['verify_ok','verify_no','message','timeout','untimeout'].includes(n.type)?'#account':'#script/'+encodeURIComponent(n.script_id);
 function nText(n){
   if(n.type==='verify')return `<b>${esc(n.author)}</b> requested a verify badge`;
   if(n.type==='report')return `<b>${esc(n.author)}</b> reported <b>${esc(n.title||'a script')}</b>`;
+  if(n.type==='message')return '<b>Owner</b> sent you a message';
+  if(n.type==='timeout')return 'You were timed out from posting'+(n.until?' until '+esc(new Date(n.until).toLocaleString('en-US')):'')+'.';
+  if(n.type==='untimeout')return 'Your timeout was removed. You can post again.';
   if(n.type==='verify_ok')return 'Your verify request was approved. You are now verified.';
   if(n.type==='verify_no')return 'Your verify request was declined.';
   return `<b>${esc(n.author)}</b> ${N_VERB[n.type]||'interacted with'} <b>${esc(n.title||'your script')}</b>`;
@@ -483,7 +493,7 @@ function nText(n){
 function nRender(){
   const p=$('nPanel');
   if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and replies.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${N_ICON[n.type]||ICON_CHAT}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${n.type==='verify_no'?'Reason: ':''}${esc(n.body.slice(0,n.type==='verify_no'||n.type==='report'?300:90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${N_ICON[n.type]||ICON_CHAT}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${n.type==='verify_no'||n.type==='timeout'?'Reason: ':''}${esc(n.body.slice(0,['verify_no','report','message','timeout'].includes(n.type)?500:90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
   p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments and replies show up here.</div>'}`;
 }
 async function nLoad(){
@@ -519,21 +529,87 @@ function ask(title,text,label='Delete'){
   });
 }
 
+const Msg={
+  async send(id,kind,body,until){
+    await rq('/rest/v1/user_messages',{method:'POST',body:{user_id:id,kind,body:String(body||'').trim().slice(0,500),until:until||null},headers:{Prefer:'return=minimal'}});
+  }
+};
+const Timeout={
+  async get(id){
+    if(!REMOTE||!isUUID(id))return null;
+    const r=await rq(`/rest/v1/user_timeouts?user_id=eq.${encodeURIComponent(id)}&select=until,reason`),t=r[0];
+    return t&&new Date(t.until)>new Date()?t:null;
+  },
+  async set(id,minutes,reason){
+    const until=new Date(Date.now()+minutes*60000).toISOString(),r=String(reason||'').trim().slice(0,300);
+    await rq('/rest/v1/user_timeouts?on_conflict=user_id',{method:'POST',body:{user_id:id,until,reason:r||null},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+    try{await Msg.send(id,'timeout',r,until)}catch(e){}
+  },
+  async clear(id){
+    await rq(`/rest/v1/user_timeouts?user_id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});
+    try{await Msg.send(id,'untimeout','')}catch(e){}
+  },
+  async guard(){
+    const s=getSess();if(!REMOTE||!s)return;
+    let t=null;try{t=await Timeout.get(s.id)}catch(e){}
+    if(t)throw new Error('You are timed out from posting until '+new Date(t.until).toLocaleString('en-US')+(t.reason?'. Reason: '+t.reason:'.'));
+  }
+};
+function askMessage(name){
+  return new Promise(res=>{
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Message to ${esc(name)}</h3><p>The user sees this in their notifications.</p><label>Message (max 500 characters)</label><textarea id="msB" maxlength="500" rows="5"></textarea><div id="msM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Send</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(null)};
+    o.querySelector('[data-r="0"]').onclick=()=>done(null);
+    o.querySelector('[data-r="1"]').onclick=()=>{const v=$('msB').value.trim();if(!v){$('msM').innerHTML='<div class="err">Please write a message.</div>';return}done(v)};
+    $('msB').focus();
+  });
+}
+function askTimeout(name){
+  return new Promise(res=>{
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Timeout ${esc(name)}</h3><p>The user cannot publish scripts or write comments until the timeout ends.</p><label>Duration</label><select id="toD">${TIMEOUT_OPTS.map(([m,l])=>`<option value="${m}">${l}</option>`).join('')}</select><label>Reason (optional, max 300 characters)</label><textarea id="toR" maxlength="300" rows="3"></textarea><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn danger" data-r="1">Timeout</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(null)};
+    o.querySelector('[data-r="0"]').onclick=()=>done(null);
+    o.querySelector('[data-r="1"]').onclick=()=>done({minutes:Number($('toD').value),reason:$('toR').value.trim()});
+  });
+}
+function askViews(title){
+  return new Promise(res=>{
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Add views</h3><p>${esc(title)}</p><label>Views to add (a minus number removes views)</label><input type="number" id="avN" step="1" placeholder="e.g. 1000"><div class="adq" style="margin-top:10px"><button type="button" class="lnk" data-f="1000">+1K</button><button type="button" class="lnk" data-f="10000">+10K</button><button type="button" class="lnk" data-f="100000">+100K</button><button type="button" class="lnk" data-f="500000">+500K</button></div><div id="avM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Add</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(null)};
+    o.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{$('avN').value=(parseInt($('avN').value,10)||0)+Number(b.dataset.f)});
+    o.querySelector('[data-r="0"]').onclick=()=>done(null);
+    o.querySelector('[data-r="1"]').onclick=()=>{const n=parseInt($('avN').value,10);if(!n){$('avM').innerHTML='<div class="err">Enter a number.</div>';return}done(n)};
+    $('avN').focus();
+  });
+}
 const Admin={
   users(){return rq('/rest/v1/rpc/admin_list_users',{method:'POST',body:{}})},
   addViews(id,n){return rq('/rest/v1/rpc/admin_add_views',{method:'POST',body:{sid:id,amount:n}})},
+  timeouts(){return rq(`/rest/v1/user_timeouts?until=gt.${encodeURIComponent(new Date().toISOString())}&select=user_id,until,reason`)},
   pending(){return rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=50')}
 };
-const adm={users:[],reports:[],pending:[],titles:{},sc:{},tab:'users',q:'',open:''};
+const adm={to:{},users:[],reports:[],pending:[],titles:{},sc:{},tab:'users',q:'',open:''};
 async function pageAdmin(){
   const s=getSess();
   if(!s||s.id!==OWNER_ID||!REMOTE){$('app').innerHTML='<div class="card empty"><h3>Not allowed</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
   $('app').innerHTML='<div class="sk" style="height:240px"></div>';
   try{
-    const [users,reports,pending]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[])]);
+    const [users,reports,pending,tos]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[]),Admin.timeouts().catch(()=>[])]);
     const ids=[...new Set(reports.map(r=>r.script_id))],titles={};
     if(ids.length){try{const t=await rq(`/rest/v1/scripts?id=in.(${ids.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}catch(e){}}
-    Object.assign(adm,{users,reports,pending,titles,sc:{},open:''});
+    Object.assign(adm,{users,reports,pending,titles,sc:{},open:'',to:Object.fromEntries(tos.map(x=>[x.user_id,x]))});
     if(location.hash.slice(1).split('/')[0]!=='admin')return;
     drawAdmin();
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
@@ -543,12 +619,12 @@ function adUserRow(u){
   const sc=adm.sc[u.id];
   let more='';
   if(open){
-    more=`<div class="adm"><div class="actions" style="margin:0 0 10px"><a class="btn sec" href="#user/${esc(u.id)}">Open profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">Badges</button></div>
+    more=`<div class="adm"><div class="actions" style="margin:0 0 10px"><a class="btn sec" href="#user/${esc(u.id)}">Open profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">Badges</button><button type="button" class="btn sec" data-um="${esc(u.id)}" data-n="${esc(u.username)}">Message</button><button type="button" class="btn sec" data-ut="${esc(u.id)}" data-n="${esc(u.username)}">${adm.to[u.id]?'Remove timeout':'Timeout'}</button></div>
     <div class="adid">ID ${esc(u.id)}</div>
     ${!sc?'<div class="hint">Loading scripts...</div>':!sc.length?'<div class="hint">No scripts yet.</div>':sc.map(x=>`<div class="ads" data-s="${esc(x.id)}"><div class="adst"><a class="ul" href="#script/${esc(x.id)}"><b>${esc(x.title)}</b></a><small>${ICON_EYE}${fmt(x.views)} views</small></div><div class="adc"><input type="number" class="adv" placeholder="Views (minus removes)" step="1"><button type="button" class="btn" data-add="${esc(x.id)}">Add</button></div><div class="adq"><button type="button" class="lnk" data-fill="1000">+1K</button><button type="button" class="lnk" data-fill="10000">+10K</button><button type="button" class="lnk" data-fill="100000">+100K</button><button type="button" class="lnk" data-fill="500000">+500K</button><button type="button" class="lnk dn" data-del="${esc(x.id)}">Delete script</button></div></div>`).join('')}</div>`;
   }
   return `<div class="adu${open?' open':''}"><button type="button" class="adh" data-u="${esc(u.id)}"><span class="adn"><b>${esc(u.username)}</b>${u.id===OWNER_ID?`<span class="owner">${ICON_SHIELD}Owner</span>`:''}${u.verified?ICON_VERIFIED:''}${t?`<span class="ctag ${t[2]}">${ICON_TIER[t[2]]}${esc(t[1])}</span>`:''}${u.tag?`<span class="ctag tc">${ICON_TAG}${esc(u.tag)}</span>`:''}<small>${esc(u.email||'')}</small></span><span class="adstat"><b>${u.scripts||0}</b> scripts<br><b>${fmt(u.views)}</b> views</span></button>
-  <div class="adsub">Joined ${esc(new Date(u.created_at).toLocaleDateString('en-US'))}${u.last_sign_in_at?' - last login '+esc(timeAgo(u.last_sign_in_at)):''}</div>${more}</div>`;
+  <div class="adsub">Joined ${esc(new Date(u.created_at).toLocaleDateString('en-US'))}${u.last_sign_in_at?' - last login '+esc(timeAgo(u.last_sign_in_at)):''}${adm.to[u.id]?' - <b class="adto">timed out until '+esc(new Date(adm.to[u.id].until).toLocaleString('en-US'))+'</b>':''}</div>${more}</div>`;
 }
 function drawAdUsers(){
   const q=adm.q.trim().toLowerCase(),box=$('adList');if(!box)return;
@@ -585,6 +661,15 @@ async function adClick(e){
       return;
     }
     if(t.dataset.fill){const inp=t.closest('.ads').querySelector('.adv');inp.value=(parseInt(inp.value,10)||0)+Number(t.dataset.fill);return}
+    if(t.dataset.um){const m=await askMessage(t.dataset.n);if(m===null)return;await Msg.send(t.dataset.um,'message',m);toast('Message sent');return}
+    if(t.dataset.ut){
+      const id=t.dataset.ut;
+      if(adm.to[id]){await Timeout.clear(id);delete adm.to[id];toast('Timeout removed');drawAdUsers();return}
+      const r=await askTimeout(t.dataset.n);if(!r)return;
+      await Timeout.set(id,r.minutes,r.reason);
+      adm.to[id]={user_id:id,until:new Date(Date.now()+r.minutes*60000).toISOString(),reason:r.reason};
+      toast('User timed out');drawAdUsers();return;
+    }
     if(t.dataset.bd){if(await badgeEditor(t.dataset.bd,t.dataset.n)){adm.users=await Admin.users();drawAdUsers()}return}
     if(t.dataset.add){
       const row=t.closest('.ads'),n=parseInt(row.querySelector('.adv').value,10);
@@ -773,8 +858,8 @@ async function pageScript(id){
     await Badges.ensure([it.user_id]);
     const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth"><a class="ul" href="#user/${encodeURIComponent(it.user_id)}">${esc(it.author)}</a>${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
-      ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth"><a class="ul" href="#user/${encodeURIComponent(it.user_id)}">${esc(it.author)}</a>${ownerTag(it.user_id)}</b></div><div><small>Views</small><b id="vwN">${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+      ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="avBtn">Add views</button><button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
       <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${own?'':`<button type="button" class="btn sec" id="rpBtn">${ICON_FLAG}Report</button>`}${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
@@ -800,6 +885,7 @@ async function pageScript(id){
     if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(async r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);await Badges.ensure(o.map(x=>x.user_id));if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
     if(own||admin){
       if(admin)$('bdBtn').onclick=async()=>{if(await badgeEditor(it.user_id,it.author))pageScript(it.id)};
+      if(admin)$('avBtn').onclick=async()=>{const n=await askViews(it.title);if(n===null)return;try{const v=await Admin.addViews(it.id,n);if($('vwN'))$('vwN').textContent=fmt(v);toast('Views updated')}catch(e){toast(e.message,1)}};
       if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
       $('delBtn').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
@@ -1307,7 +1393,7 @@ async function pageUser(id){
   $('app').innerHTML='<div class="sk" style="height:240px"></div>';
   try{
     const adm=!!s&&s.id===OWNER_ID;
-    const [p,list,,vq]=await Promise.all([Prof.load(id),DB.byUser(id),Badges.ensure([id]),adm?Verify.status(id).catch(()=>null):null]);
+    const [p,list,,vq,tq]=await Promise.all([Prof.load(id),DB.byUser(id),Badges.ensure([id]),adm?Verify.status(id).catch(()=>null):null,adm?Timeout.get(id).catch(()=>null):null]);
     if((location.hash.slice(1).split('/')[1]||'')!==id)return;
     const name=NAMES[id]||(list[0]&&list[0].author)||p.username||'User';
     NAMES[id]=name;
@@ -1315,10 +1401,18 @@ async function pageUser(id){
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
     $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}"></div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
-      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
+      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
       <div class="pstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
+    if(admin){
+      $('umBtn').onclick=async()=>{const m=await askMessage(name);if(m===null)return;try{await Msg.send(id,'message',m);toast('Message sent')}catch(e){toast(e.message,1)}};
+      $('utBtn').onclick=async()=>{
+        if(tq){try{await Timeout.clear(id);toast('Timeout removed');pageUser(id)}catch(e){toast(e.message,1)}return}
+        const r=await askTimeout(name);if(!r)return;
+        try{await Timeout.set(id,r.minutes,r.reason);toast('User timed out');pageUser(id)}catch(e){toast(e.message,1)}
+      };
+    }
     if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
     if($('vdBtn'))$('vdBtn').onclick=async()=>{const r=await askReason(name);if(r===null)return;try{await Verify.decline(id,r);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}

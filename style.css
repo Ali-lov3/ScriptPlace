@@ -363,3 +363,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:32px 20px;borde
 .adst small svg{width:14px;height:14px}
 .adc{display:flex;gap:8px}
 .adq{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+.nic.message{color:#7aa7ff}
+.nic.timeout,.nic.untimeout{color:#f5b84b}
+.nic.message+.nt .nq,.nic.timeout+.nt .nq{white-space:normal}
+.adto{color:#f5b84b;font-weight:600}
