@@ -63,6 +63,9 @@ const ICON_TIER={
   t3:svgI('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
   t4:svgI('<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>')
 };
+const ICON_FLAG=svgI('<path d="M5 22V4M5 4h12l-2 4 2 4H5"/>');
+const VERIFY_WAIT=10*60000;
+const REPORT_REASONS=['Malicious or harmful code','Stolen script','Scam or fake','Inappropriate content','Other'];
 const UB={},NAMES={};
 const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
 function badgeHTML(id){
@@ -260,12 +263,22 @@ const DB={
     else vn=LS.get('spl_vnotices',[]).filter(x=>x.user_id===s.id);
     let vr=[];
     if(s.id===OWNER_ID&&REMOTE){try{vr=await rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=30')}catch(e){}}
+    let rp=[];
+    if(s.id===OWNER_ID){try{rp=await Report.open()}catch(e){}}
+    const rm=[...new Set(rp.map(r=>r.script_id))].filter(i=>!(i in titles));
+    if(rm.length){
+      try{
+        if(REMOTE){const t=await rq(`/rest/v1/scripts?id=in.(${rm.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}
+        else{const all=LS.get('spl_scripts',[]);rm.forEach(i=>{const x=all.find(y=>y.id===i);if(x)titles[i]=x.title})}
+      }catch(e){}
+    }
     const repIds=new Set(reps.map(r=>r.id));
     const out=[
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
       ...coms.filter(c=>!repIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
       ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
       ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''})),
+      ...rp.map(r=>({type:'report',script_id:r.script_id,user_id:r.reporter_id,author:r.reporter,body:r.reason+(r.details?': '+r.details:''),created_at:r.created_at,title:titles[r.script_id]})),
       ...vn.map(v=>({type:v.status==='approved'?'verify_ok':'verify_no',script_id:'',user_id:s.id,author:'ScriptPlace',body:v.reason||'',created_at:v.created_at,title:''}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
@@ -324,14 +337,47 @@ const Badges={
     if(verified){await Verify.clear(id);if(!was){try{await Verify.notify(id,'approved')}catch(e){}}}
   }
 };
+const Report={
+  async send(scriptId,reason,details){
+    const s=getSess(),d=String(details||'').trim().slice(0,500);
+    if(REMOTE){
+      try{await rq('/rest/v1/script_reports',{method:'POST',body:{script_id:scriptId,reporter_id:s.id,reporter:s.username,reason,details:d||null},headers:{Prefer:'return=minimal'}})}
+      catch(e){if(/duplicate|already exists/i.test(e.message))throw new Error('You already reported this script.');throw e}
+      return;
+    }
+    const a=LS.get('spl_reports',[]);
+    if(a.some(r=>r.script_id===scriptId&&r.reporter_id===s.id))throw new Error('You already reported this script.');
+    a.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:scriptId,reporter_id:s.id,reporter:s.username,reason,details:d,created_at:new Date().toISOString()});
+    LS.set('spl_reports',a);
+  },
+  async list(scriptId){
+    if(REMOTE)return rq(`/rest/v1/script_reports?script_id=eq.${encodeURIComponent(scriptId)}&select=id,reporter,reason,details,created_at&order=created_at.desc&limit=50`);
+    return LS.get('spl_reports',[]).filter(r=>r.script_id===scriptId).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  },
+  async open(){
+    if(REMOTE)return rq('/rest/v1/script_reports?select=script_id,reporter_id,reporter,reason,details,created_at&order=created_at.desc&limit=30');
+    return LS.get('spl_reports',[]);
+  },
+  async dismiss(id){
+    if(REMOTE){await rq(`/rest/v1/script_reports?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+    LS.set('spl_reports',LS.get('spl_reports',[]).filter(r=>r.id!==id));
+  }
+};
 const Verify={
   async status(id){
     if(REMOTE){if(!isUUID(id))return null;const r=await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}&select=status,created_at`);return r[0]||null}
     return LS.get('spl_verify',{})[id]||null;
   },
   async request(){
-    const s=getSess();
-    if(REMOTE){await rq('/rest/v1/verify_requests',{method:'POST',body:{user_id:s.id,author:s.username,status:'pending'},headers:{Prefer:'return=minimal'}});return}
+    const s=getSess(),waitMsg='You can request again 10 minutes after a decline.';
+    if(REMOTE){
+      try{await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(s.id)}&status=eq.rejected`,{method:'DELETE'})}catch(e){}
+      try{await rq('/rest/v1/verify_requests',{method:'POST',body:{user_id:s.id,author:s.username,status:'pending'},headers:{Prefer:'return=minimal'}})}
+      catch(e){if(/duplicate|already exists/i.test(e.message))throw new Error(waitMsg);throw e}
+      return;
+    }
+    const d=await Verify.lastDecline(s.id);
+    if(d&&new Date(d.created_at).getTime()+VERIFY_WAIT>Date.now())throw new Error(waitMsg);
     const a=LS.get('spl_verify',{});a[s.id]={author:s.username,status:'pending',created_at:new Date().toISOString()};LS.set('spl_verify',a);
   },
   async decline(id,reason){
@@ -355,6 +401,27 @@ const Verify={
     }catch(e){}
   }
 };
+function askReport(title){
+  return new Promise(res=>{
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Report script</h3><p>${esc(title)}</p><label>Reason</label><select id="rpR">${REPORT_REASONS.map(r=>`<option>${esc(r)}</option>`).join('')}</select><label>Details (optional, max 500 characters)</label><textarea id="rpD" maxlength="500" rows="4" placeholder="What is wrong with this script?"></textarea><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn danger" data-r="1">Send report</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(null)};
+    o.querySelector('[data-r="0"]').onclick=()=>done(null);
+    o.querySelector('[data-r="1"]').onclick=()=>done({reason:$('rpR').value,details:$('rpD').value});
+  });
+}
+async function drawReports(sid){
+  const box=$('rpList');if(!box)return;
+  let list=[];
+  try{list=await Report.list(sid)}catch(e){}
+  if(!$('rpList'))return;
+  if(!list.length){box.innerHTML='';return}
+  box.innerHTML=`<section class="card"><h2>Reports<span class="cnt">${list.length}</span></h2>${list.map(r=>`<div class="rpi"><div><b>${esc(r.reporter)}</b> - ${esc(r.reason)}<small>${esc(timeAgo(r.created_at))}</small>${r.details?`<p>${esc(r.details)}</p>`:''}</div><button type="button" class="btn sec" data-x="${esc(r.id)}">Dismiss</button></div>`).join('')}</section>`;
+  box.querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{try{await Report.dismiss(b.dataset.x);toast('Report dismissed');nLoad();drawReports(sid)}catch(e){toast(e.message,1)}});
+}
 function askReason(name){
   return new Promise(res=>{
     const o=document.createElement('div');
@@ -403,10 +470,11 @@ function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return noti
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
 const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
-const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY};
+const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY,report:ICON_FLAG};
 const nHref=n=>n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):(n.type==='verify_ok'||n.type==='verify_no')?'#account':'#script/'+encodeURIComponent(n.script_id);
 function nText(n){
   if(n.type==='verify')return `<b>${esc(n.author)}</b> requested a verify badge`;
+  if(n.type==='report')return `<b>${esc(n.author)}</b> reported <b>${esc(n.title||'a script')}</b>`;
   if(n.type==='verify_ok')return 'Your verify request was approved. You are now verified.';
   if(n.type==='verify_no')return 'Your verify request was declined.';
   return `<b>${esc(n.author)}</b> ${N_VERB[n.type]||'interacted with'} <b>${esc(n.title||'your script')}</b>`;
@@ -414,7 +482,7 @@ function nText(n){
 function nRender(){
   const p=$('nPanel');
   if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and replies.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${N_ICON[n.type]||ICON_CHAT}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${n.type==='verify_no'?'Reason: ':''}${esc(n.body.slice(0,n.type==='verify_no'?300:90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${N_ICON[n.type]||ICON_CHAT}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${n.type==='verify_no'?'Reason: ':''}${esc(n.body.slice(0,n.type==='verify_no'||n.type==='report'?300:90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
   p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments and replies show up here.</div>'}`;
 }
 async function nLoad(){
@@ -617,17 +685,24 @@ async function pageScript(id){
       ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
-      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
+      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${own?'':`<button type="button" class="btn sec" id="rpBtn">${ICON_FLAG}Report</button>`}${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
       <p class="hint">Uploaded by a user. Read the code and only run what you trust.</p></div>
     <div class="card"><h2>About</h2>${it.description?`<div style="white-space:pre-wrap;color:#d8ccd5">${esc(it.description)}</div>`:'<p class="hint">No description.</p>'}
       ${(it.features||[]).length?`<label>Features</label><div class="chips">${it.features.map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div>`:''}
       ${(it.executors||[]).length?`<label>Tested on</label><div class="chips">${it.executors.map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}</div>`:''}</div></div>
     <section class="card cmsec"><h2>Comments<span class="cnt" id="cmCount">0</span></h2><div id="cmForm"></div><div class="cmlist" id="cmList"><div class="hint">Loading comments...</div></div></section>
+    <div id="rpList"></div>
     <div id="related"></div>`;
     $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString('en-US')+' characters';
     Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML='<a class="ul who" href="#user/'+encodeURIComponent(it.user_id)+'">'+avatarHTML(p,it.author,24)+'<span>'+esc(it.author)+'</span></a>'+ownerTag(it.user_id)}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
+    if($('rpBtn'))$('rpBtn').onclick=async()=>{
+      if(!getSess()){toast('Log in to report a script',1);go('account');return}
+      const r=await askReport(it.title);if(!r)return;
+      try{await Report.send(it.id,r.reason,r.details);toast('Report sent')}catch(e){toast(e.message,1)}
+    };
+    if(admin)drawReports(it.id);
     initLikes(it);
     initComments(it);
     if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(async r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);await Badges.ensure(o.map(x=>x.user_id));if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
@@ -896,6 +971,7 @@ async function pageMine(){
 const AV_COLORS=['#ff4d9d','#a855f7','#3b82f6','#14b8a6','#f59e0b','#ef4444'];
 const ICON_USER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>';
 const dataImg=v=>/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v||'')?v:'';
+const bannerCSS=(p,col)=>{const b=dataImg(p&&p.banner);return b?`background:${col} url('${esc(b)}') center/cover no-repeat`:`background:${col}`};
 function avatarHTML(p,name,size){
   p=p||{};
   const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],img=dataImg(p.avatar);
@@ -912,9 +988,9 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color,username`);return r[0]||{}}catch(e){return{}}}
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,bio,link,color,username,banner`);return r[0]||{}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
-    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||''}:{};
+    return u?{avatar:u.avatar||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',banner:u.banner||''}:{};
   },
   async many(ids){
     const out={};
@@ -961,6 +1037,21 @@ function readAvatar(file){
     im.src=url;
   });
 }
+function readBanner(file){
+  return new Promise((res,rej)=>{
+    if(!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type))return rej(new Error('Choose a PNG, JPG or WebP image.'));
+    if(file.size>8*1024*1024)return rej(new Error('That image is larger than 8 MB.'));
+    const url=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      const W=960,H=240,c=document.createElement('canvas');c.width=W;c.height=H;
+      const r=W/H;let sw=im.width,sh=sw/r;if(sh>im.height){sh=im.height;sw=sh*r}
+      c.getContext('2d').drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,W,H);
+      URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.8));
+    };
+    im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Could not read this image.'))};
+    im.src=url;
+  });
+}
 const onAccount=()=>(location.hash.slice(1)||'home').split('/')[0]==='account';
 async function pageAccount(){
   if(getSess()){
@@ -997,7 +1088,7 @@ async function pageAccount(){
 function renderProfile(mine){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
   const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
-  const work={avatar:dataImg(p.avatar),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
+  const work={avatar:dataImg(p.avatar),banner:dataImg(p.banner),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
@@ -1008,6 +1099,7 @@ function renderProfile(mine){
       <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
         <div class="avtxt"><b>Profile photo</b><p class="hint">PNG, JPG or WebP. Cropped to a square.</p><div class="avact"><button type="button" class="lnk up" id="upLink">Upload new</button><button type="button" class="lnk dn hidden" id="rmBtn">Remove</button></div></div>
         <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
+      <div class="aved" style="margin-top:14px"><div class="avtxt"><b>Profile banner</b><p class="hint">PNG, JPG or WebP. Cropped to 4:1.</p><div class="avact"><button type="button" class="lnk up" id="bnUp">Upload banner</button><button type="button" class="lnk dn hidden" id="bnRm">Remove</button></div></div><input type="file" id="bnFile" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden"></div>
       <label>Accent color</label><div class="swatches" id="sw"></div>
       <label>Bio</label><textarea id="bio" maxlength="160" style="min-height:80px;font-family:inherit" placeholder="What do you make?"></textarea><div class="hint" id="bioN"></div>
       <label>Community link (https)</label><input id="plinkIn" placeholder="https://discord.gg/...">
@@ -1022,7 +1114,8 @@ function renderProfile(mine){
   <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
   $('bio').value=p.bio||'';$('plinkIn').value=p.link||'';
   const paint=()=>{
-    $('pBan').style.background=work.color;
+    $('pBan').setAttribute('style',bannerCSS(work,work.color));
+    $('bnRm').classList.toggle('hidden',!work.banner);
     $('pAv').innerHTML=avatarHTML(work,s.username,88);
     $('eAv').innerHTML=avatarHTML(work,s.username,80);
     $('rmBtn').classList.toggle('hidden',!work.avatar);
@@ -1040,12 +1133,19 @@ function renderProfile(mine){
     $('file').value='';
   };
   $('rmBtn').onclick=()=>{work.avatar='';paint()};
+  $('bnUp').onclick=()=>$('bnFile').click();
+  $('bnFile').onchange=async()=>{
+    const f=$('bnFile').files[0];if(!f)return;
+    try{work.banner=await readBanner(f);paint()}catch(e){toast(e.message,1)}
+    $('bnFile').value='';
+  };
+  $('bnRm').onclick=()=>{work.banner='';paint()};
   $('saveP').onclick=async()=>{
     const link=$('plinkIn').value.trim(),m=$('pmsg');
     if(link&&!safeUrl(link)){m.innerHTML='<div class="err">The link must start with https://</div>';return}
     $('saveP').disabled=true;
     try{
-      await Prof.save({avatar:work.avatar,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
+      await Prof.save({avatar:work.avatar,banner:work.banner,color:work.color,bio:$('bio').value.trim().slice(0,160),link});
       m.innerHTML='';toast('Profile saved');renderProfile(mine);
     }catch(e){m.innerHTML=`<div class="err">${esc(e.message)}</div>`}
     $('saveP').disabled=false;
@@ -1087,15 +1187,20 @@ async function initVerify(id){
   try{st=await Verify.status(id)}catch(e){}
   if(!$('vrArea'))return;
   if(!ok){$('vrArea').innerHTML='<p class="hint">Request Verify unlocks at Popular Creator (500K views).</p>';return}
+  let note='';
   if(st&&st.status==='rejected'){
     let dr=null;
     try{dr=await Verify.lastDecline(id)}catch(e){}
     if(!$('vrArea'))return;
-    $('vrArea').innerHTML='<p class="hint">Your verify request was declined.'+(dr&&dr.reason?' Reason: '+esc(dr.reason):'')+'</p>';
-    return;
-  }
-  if(st){$('vrArea').innerHTML='<button type="button" class="btn sec" disabled style="margin-top:12px">Verify requested</button>';return}
-  $('vrArea').innerHTML='<button type="button" class="btn" id="vrBtn" style="margin-top:12px">Request Verify</button><div id="vrMsg"></div>';
+    const left=dr?new Date(dr.created_at).getTime()+VERIFY_WAIT-Date.now():0,why=dr&&dr.reason?' Reason: '+esc(dr.reason):'';
+    if(left>0){
+      $('vrArea').innerHTML='<p class="hint">Your verify request was declined.'+why+' You can request again in '+Math.ceil(left/60000)+' min.</p>';
+      setTimeout(()=>{if($('vrArea'))initVerify(id)},Math.min(left,60000)+500);
+      return;
+    }
+    note='<p class="hint">Your last verify request was declined.'+why+'</p>';
+  }else if(st){$('vrArea').innerHTML='<button type="button" class="btn sec" disabled style="margin-top:12px">Verify requested</button>';return}
+  $('vrArea').innerHTML=note+'<button type="button" class="btn" id="vrBtn" style="margin-top:12px">Request Verify</button><div id="vrMsg"></div>';
   $('vrBtn').onclick=async()=>{
     $('vrBtn').disabled=true;
     try{await Verify.request();toast('Verify request sent');initVerify(id)}
@@ -1116,7 +1221,7 @@ async function pageUser(id){
     const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],views=list.reduce((a,x)=>a+(x.views||0),0),plink=safeUrl(p.link);
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
-    $('app').innerHTML=`<section class="prof"><div class="pban" style="background:${col}"></div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
+    $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}"></div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
       <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
       <div class="pstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
