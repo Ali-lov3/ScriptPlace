@@ -315,3 +315,13 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .toast{background:var(--s3);border:1px solid var(--line2);border-radius:var(--r);padding:10px 16px;font-size:13.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .toast.bad{border-color:var(--bad)}
 footer{text-align:center;color:var(--mut);font-size:12px;padding:32px 20px;border-top:1px solid var(--line)}
+.vf{width:15px;height:15px;color:#3b9cff;vertical-align:-2px;margin-left:5px;flex:0 0 auto}
+.ctag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;font-size:10.5px;font-weight:600;line-height:1.6;vertical-align:middle;border:1px solid var(--line2);background:var(--s3);color:var(--text);white-space:nowrap}
+.ctag.t1{background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.3);color:var(--good)}
+.ctag.t2{background:rgba(59,156,255,.1);border-color:rgba(59,156,255,.3);color:#3b9cff}
+.ctag.t3{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.35);color:#c084fc}
+.ctag.t4{background:rgba(245,184,75,.12);border-color:rgba(245,184,75,.4);color:#f5b84b}
+.ctag.tc{background:rgba(255,61,139,.1);border-color:rgba(255,61,139,.3);color:var(--pink)}
+.cm .ch .bdg{margin-left:auto;color:var(--mut);font-size:12.5px;font-weight:500}
+.cm .ch .bdg:hover{color:var(--pink)}
+.cm .ch .bdg+.dn{margin-left:8px}

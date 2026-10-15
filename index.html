@@ -51,7 +51,16 @@ const ICON_HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_CHAT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
 const ICON_TRASH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const OWNER_ID='53258b8b-2f10-4c07-9b18-aac9c4981288';
-const ownerTag=id=>id===OWNER_ID?'<span class="owner">Owner</span>':'';
+const TIERS=[[1000000,'Famous Creator','t4'],[500000,'Popular Creator','t3'],[100000,'Very Good Creator','t2'],[10000,'Good Creator','t1']];
+const ICON_VERIFIED='<svg class="vf" viewBox="0 0 24 24" role="img" aria-label="Verified"><title>Verified</title><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const UB={};
+const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
+function badgeHTML(id){
+  const u=UB[id];if(!u)return '';
+  const t=tierOf(u.views);
+  return (u.verified?ICON_VERIFIED:'')+(t?`<span class="ctag ${t[2]}">${esc(t[1])}</span>`:'')+(u.tag?`<span class="ctag tc">${esc(u.tag)}</span>`:'');
+}
+const ownerTag=id=>(id===OWNER_ID?'<span class="owner">Owner</span>':'')+badgeHTML(id);
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -256,6 +265,59 @@ const DB={
   }
 };
 
+const Badges={
+  async ensure(ids){
+    const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in UB));
+    if(!need.length)return;
+    need.forEach(i=>{UB[i]={views:0,verified:false,tag:''}});
+    if(REMOTE){
+      const ok=need.filter(isUUID);if(!ok.length)return;
+      const list=ok.map(encodeURIComponent).join(',');
+      try{
+        const [v,b]=await Promise.all([
+          rq(`/rest/v1/creator_views?user_id=in.(${list})&select=user_id,total_views`),
+          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag`)
+        ]);
+        v.forEach(r=>{UB[r.user_id].views=Number(r.total_views)||0});
+        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||''});
+      }catch(e){}
+      return;
+    }
+    const sc=LS.get('spl_scripts',[]),bd=LS.get('spl_badges',{});
+    need.forEach(i=>{
+      UB[i].views=sc.filter(x=>x.user_id===i).reduce((a,x)=>a+(x.views||0),0);
+      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||''}
+    });
+  },
+  async save(id,verified,tag){
+    const t=String(tag||'').trim().slice(0,20);
+    if(REMOTE){
+      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+    }else{
+      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t};LS.set('spl_badges',bd);
+    }
+    UB[id]={...(UB[id]||{views:0}),verified,tag:t};
+  }
+};
+function badgeEditor(id,name){
+  return new Promise(async res=>{
+    await Badges.ensure([id]);
+    const u=UB[id]||{},o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tag appears as a label.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
+    document.body.appendChild(o);
+    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(false)};
+    o.querySelector('[data-r="0"]').onclick=()=>done(false);
+    o.querySelector('[data-r="1"]').onclick=async()=>{
+      try{await Badges.save(id,$('bdV').checked,$('bdT').value);toast('Badges saved');done(true)}
+      catch(e){$('bdM').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+    };
+    $('bdT').focus();
+  });
+}
+
 function closeMenu(){$('menu').classList.add('hidden');$('tMenu').classList.remove('open')}
 $('tMenu').onclick=e=>{e.stopPropagation();closeNotif();const o=!$('menu').classList.toggle('hidden');$('tMenu').classList.toggle('open',o)};
 $('mOut').onclick=()=>{Auth.logout();toast('Logged out');route()};
@@ -454,7 +516,7 @@ async function homeLoad(reset){
   $('hTitle').textContent=home.q?`Results for "${home.q}"`:(home.sort==='top'?'Most viewed scripts':'Latest scripts');
   const st=$('hStatus');st.className='hint';st.textContent='';
   try{
-    const r=await DB.list(home);home.items.push(...r.items);home.more=r.more;
+    const r=await DB.list(home);await Badges.ensure(r.items.map(x=>x.user_id));home.items.push(...r.items);home.more=r.more;
     grid.innerHTML=home.items.length?home.items.map(it=>cardHTML(it)).join(''):`<div class="empty" style="grid-column:1/-1"><h3>${home.q||fcount()?'No scripts found':'No scripts yet'}</h3>${home.q||fcount()?'Try another keyword or reset the filters.':'Publish the first one.'}<div class="actions" style="justify-content:center">${fcount()?'<button class="btn sec" id="emptyReset">Reset filters</button>':'<a class="btn" href="#publish">Publish a script</a>'}</div></div>`;
     const er=$('emptyReset');if(er)er.onclick=()=>$('fReset').click();
     $('hMore').classList.toggle('hidden',!home.more);
@@ -468,10 +530,11 @@ async function pageScript(id){
     const it=await DB.get(id);
     if(!it){$('app').innerHTML='<div class="card empty"><h3>Script not found</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
     DB.view(id);
+    await Badges.ensure([it.user_id]);
     const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
       <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth">${esc(it.author)}${ownerTag(it.user_id)}</b></div><div><small>Views</small><b>${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
-      ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
+      ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
       <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
@@ -487,8 +550,9 @@ async function pageScript(id){
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
     initLikes(it);
     initComments(it);
-    if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
+    if(it.game_name)DB.list({q:it.game_name,sort:'top'}).then(async r=>{const o=r.items.filter(x=>x.id!==it.id).slice(0,4);await Badges.ensure(o.map(x=>x.user_id));if(o.length&&$('related'))$('related').innerHTML=`<div class="rowh big"><h2>More for ${esc(it.game_name)}</h2></div><div class="feed">${o.map(x=>cardHTML(x)).join('')}</div>`}).catch(()=>{});
     if(own||admin){
+      if(admin)$('bdBtn').onclick=async()=>{if(await badgeEditor(it.user_id,it.author))pageScript(it.id)};
       if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
       $('delBtn').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
@@ -533,6 +597,7 @@ async function initComments(it){
       posting=true;$('cmPost').disabled=true;m.innerHTML='';
       try{
         const c=await DB.addComment(it.id,v);
+        await Badges.ensure([c.user_id]);
         last=Date.now();
         LS.set('spl_cm_'+s.id,last);
         const cur=getSess();
@@ -563,6 +628,7 @@ async function initComments(it){
       posting=true;$('rPost').disabled=true;m.innerHTML='';
       try{
         const c=await DB.addComment(it.id,v,pid);
+        await Badges.ensure([c.user_id]);
         lastR=Date.now();
         LS.set('spl_rp_'+getSess().id,lastR);
         const cur=getSess();
@@ -585,10 +651,11 @@ async function initComments(it){
     const cur=getSess();
     const one=(c,top)=>{
       const reply=!!top,pid=reply?top.id:c.id,can=cur&&(cur.id===c.user_id||cur.id===OWNER_ID),k=reply?[]:(kids[c.id]||[]);
-      return `<div class="cm${reply?' rp':''}">${avatarHTML(profs[c.user_id],c.author,reply?28:36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${can?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div><div class="cact"><button type="button" data-p="${esc(pid)}" data-n="${reply?esc(c.author):''}">Reply${k.length?` (${k.length})`:''}</button></div>${k.length?`<div class="reps">${k.map(x=>one(x,c)).join('')}</div>`:''}${reply?'':`<div class="rform" id="rf-${esc(c.id)}"></div>`}</div></div>`;
+      return `<div class="cm${reply?' rp':''}">${avatarHTML(profs[c.user_id],c.author,reply?28:36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&cur.id===OWNER_ID&&c.user_id!==OWNER_ID?`<button type="button" class="bdg" data-b="${esc(c.user_id)}" data-n="${esc(c.author)}">Badges</button>`:''}${can?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div><div class="cact"><button type="button" data-p="${esc(pid)}" data-n="${reply?esc(c.author):''}">Reply${k.length?` (${k.length})`:''}</button></div>${k.length?`<div class="reps">${k.map(x=>one(x,c)).join('')}</div>`:''}${reply?'':`<div class="rform" id="rf-${esc(c.id)}"></div>`}</div></div>`;
     };
     box.innerHTML=tops.map(c=>one(c,null)).join('');
     box.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>openForm(b.dataset.p,b.dataset.n?'@'+b.dataset.n+' ':''));
+    box.querySelectorAll('[data-b]').forEach(b=>b.onclick=async()=>{if(await badgeEditor(b.dataset.b,b.dataset.n))pageScript(it.id)});
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
       const id=b.dataset.d,hasKids=list.some(x=>x.parent_id===id);
       if(!await ask('Delete this comment?',hasKids?'This comment and all replies to it will be removed for everyone.':'This comment will be removed for everyone.'))return;
@@ -599,7 +666,8 @@ async function initComments(it){
     list=await DB.comments(it.id);
     if(!$('cmList'))return;
     draw();
-    profs=await Prof.many([...new Set(list.map(c=>c.user_id))]);
+    const uids=[...new Set(list.map(c=>c.user_id))],got=await Promise.all([Prof.many(uids),Badges.ensure(uids)]);
+    profs=got[0];
     draw();
   }catch(e){
     if($('cmList'))$('cmList').innerHTML=`<p class="err">Could not load comments: ${esc(e.message)}</p>`;
@@ -819,6 +887,7 @@ async function pageAccount(){
     let mine=[];
     try{await Prof.sync()}catch(e){}
     try{mine=await DB.mine()}catch(e){}
+    await Badges.ensure([getSess().id]);
     if(!onAccount())return;
     renderProfile(mine);
     return;
