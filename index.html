@@ -113,7 +113,7 @@ async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncod
 async function copy(t,label){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(label||'Copied to clipboard')}
 async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
 async function icons(ids){if(!ids.length)return{};try{const d=await getJSON(`${PROXY.thumbs}/v1/games/icons?universeIds=${ids.join(',')}&size=256x256&format=Png&isCircular=false`);const m={};d.data.forEach(x=>m[x.targetId]=x.imageUrl);return m}catch(e){return{}}}
-const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',access:'free',executors:[],editId:null,rules:false});
+const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',keyLink:'',access:'free',executors:[],editId:null,rules:false});
 let draft=fresh();
 const saveDraft=()=>{};try{localStorage.removeItem('spl_draft')}catch(e){}
 const isUUID=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'');
@@ -891,13 +891,13 @@ async function pageScript(id){
     if(!it){$('app').innerHTML='<div class="card empty"><h3>Script not found</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
     DB.view(id);
     await Badges.ensure([it.user_id]);
-    const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
+    const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link),klink=it.key_system?safeUrl(it.key_link):'';
     $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div class="dmain"><h1>${esc(it.title)}</h1>
       <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div class="fa"><small>Author</small><b class="who" id="auth"><a class="ul" href="#user/${encodeURIComponent(it.user_id)}">${esc(dn(it.user_id,it.author))}</a>${ownerTag(it.user_id)}</b></div><div><small>Views</small><b id="vwN">${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
       ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="avBtn">Add views</button><button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
-      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${own?'':`<button type="button" class="btn sec" id="rpBtn">${ICON_FLAG}Report</button>`}${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
+      <div class="actions"><button class="btn" id="cpBtn">Copy script</button><button type="button" class="btn sec lk" id="lkBtn" aria-label="Like this script">${ICON_HEART}<span class="n">0</span></button><button class="btn sec" id="shBtn">Copy link</button>${own?'':`<button type="button" class="btn sec" id="rpBtn">${ICON_FLAG}Report</button>`}${klink?`<a class="btn sec" href="${esc(klink)}" target="_blank" rel="noopener noreferrer">Get key</a>`:''}${link?`<a class="btn sec" href="${esc(link)}" target="_blank" rel="noopener noreferrer">Community</a>`:''}${it.place_id?`<a class="btn sec" href="https://www.roblox.com/games/${encodeURIComponent(it.place_id)}" target="_blank" rel="noopener noreferrer">Open game</a>`:''}</div>
       <p class="hint">Uploaded by a user. Read the code and only run what you trust.</p></div>
     <div class="card"><h2>About</h2>${it.description?`<div style="white-space:pre-wrap;color:#d8ccd5">${esc(it.description)}</div>`:'<p class="hint">No description.</p>'}
       ${(it.features||[]).length?`<label>Features</label><div class="chips">${it.features.map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div>`:''}
@@ -921,7 +921,7 @@ async function pageScript(id){
     if(own||admin){
       if(admin)$('bdBtn').onclick=async()=>{if(await badgeEditor(it.user_id,it.author))pageScript(it.id)};
       if(admin)$('avBtn').onclick=async()=>{const n=await askViews(it.title);if(n===null)return;try{const v=await Admin.addViews(it.id,n);if($('vwN'))$('vwN').textContent=fmt(v);toast('Views updated')}catch(e){toast(e.message,1)}};
-      if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
+      if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
       $('delBtn').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
   }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
@@ -1058,7 +1058,8 @@ function pagePublish(){
       <div class="chips" id="featChips" style="margin-top:10px"></div>
       <label>Tested executors</label><div class="chips" id="execChips"></div>
       <div class="row"><div><label>Access</label><select id="access"><option value="free">Keyless</option><option value="key">Key system</option><option value="paid">Paid</option></select></div>
-      <div><label>Discord or community link (https)</label><input id="link" placeholder="https://discord.gg/..."></div></div></section>
+      <div><label>Discord or community link (https)</label><input id="link" placeholder="https://discord.gg/..."></div></div>
+      <div id="keyWrap" class="hidden"><label>Key link (optional, https)</label><input id="keyLink" placeholder="https://..."><div class="hint">Where people can get the key. Shown as a "Get key" button on your script.</div></div></section>
     <section class="card"><div class="step"><i>3</i><h2>Script</h2></div>
       <textarea id="code" placeholder='loadstring(game:HttpGet("https://raw.githubusercontent.com/..."))()'></textarea>
       <div class="hint" id="codeInfo"></div>
@@ -1068,9 +1069,9 @@ function pagePublish(){
       <div id="pubMsg"></div></section>
   </div>
   <div class="sticky"><div class="card"><h2>Preview</h2><div id="preview"></div><p class="hint">This is how your script appears in the feed.</p></div></div></div>`;
-  $('title').value=draft.title;$('desc').value=draft.description;$('code').value=draft.code;$('link').value=draft.link;$('access').value=draft.access;$('rules').checked=!!draft.rules;
+  $('title').value=draft.title;$('desc').value=draft.description;$('code').value=draft.code;$('link').value=draft.link;$('keyLink').value=draft.keyLink||'';$('access').value=draft.access;const syncKey=()=>$('keyWrap').classList.toggle('hidden',draft.access!=='key');syncKey();$('rules').checked=!!draft.rules;
   renderGameArea();renderChips();renderExec();renderPreview();codeInfo();
-  [['title','title'],['desc','description'],['code','code'],['link','link'],['access','access']].forEach(([i,k])=>$(i).addEventListener('input',()=>{draft[k]=$(i).value;saveDraft();renderPreview();if(i==='code')codeInfo()}));
+  [['title','title'],['desc','description'],['code','code'],['link','link'],['keyLink','keyLink'],['access','access']].forEach(([i,k])=>$(i).addEventListener('input',()=>{draft[k]=$(i).value;saveDraft();renderPreview();if(i==='code')codeInfo();if(i==='access')syncKey()}));
   $('rules').onchange=()=>{draft.rules=$('rules').checked;saveDraft()};
   $('featAdd').onclick=addFeat;$('featIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addFeat()}});
   $('lsBtn').onclick=()=>{const u=$('raw').value.trim();if(!safeUrl(u)){toast('Raw link must start with https://',1);return}$('code').value=`loadstring(game:HttpGet("${u}"))()`;draft.code=$('code').value;saveDraft();renderPreview();codeInfo()};
@@ -1155,10 +1156,12 @@ async function publish(){
   if(title.length<3)return bad('Title needs at least 3 characters.');
   if(!code)return bad('Add your script code.');
   if(link&&!safeUrl(link))return bad('The link must start with https://');
+  const keyLink=draft.access==='key'?(draft.keyLink||'').trim():'';
+  if(keyLink&&!safeUrl(keyLink))return bad('The key link must start with https://');
   if(!draft.rules)return bad('Please confirm the script rules.');
   $('pubBtn').disabled=true;
   try{
-    const saved=await DB.save({title,description:draft.description.trim(),game_name:g.name,place_id:Number(g.placeId)||null,universe_id:Number(g.universeId)||null,icon:safeUrl(g.icon)||'',features:draft.features,key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,code,link},draft.editId);
+    const saved=await DB.save({title,description:draft.description.trim(),game_name:g.name,place_id:Number(g.placeId)||null,universe_id:Number(g.universeId)||null,icon:safeUrl(g.icon)||'',features:draft.features,key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,code,link,key_link:keyLink||null},draft.editId);
     toast(draft.editId?'Changes saved':'Published');draft=fresh();saveDraft();go('script/'+saved.id);
   }catch(e){bad(e.message);$('pubBtn').disabled=false}
 }
@@ -1466,7 +1469,7 @@ function renderProfile(mine){
     box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
       try{
         const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
-        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
+        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
         saveDraft();go('publish');
       }catch(e){toast(e.message,1)}
     });
