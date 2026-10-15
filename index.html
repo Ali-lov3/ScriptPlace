@@ -31,6 +31,7 @@ window.SCRIPTPLACE_CONFIG={
     <a class="mi" href="#home" data-p="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
     <a class="mi" href="#mine" data-p="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>My scripts</a>
     <a class="mi" href="#account" data-p="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><span id="navAcc">Login</span></a>
+    <a class="mi hidden" href="#admin" data-p="admin" id="mAdmin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6z"/></svg>Admin</a>
     <a class="pub" href="#publish" data-p="publish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Publish a script</a>
     <button type="button" class="mout hidden" id="mOut">Log out</button>
   </nav>
@@ -518,12 +519,103 @@ function ask(title,text,label='Delete'){
   });
 }
 
+const Admin={
+  users(){return rq('/rest/v1/rpc/admin_list_users',{method:'POST',body:{}})},
+  addViews(id,n){return rq('/rest/v1/rpc/admin_add_views',{method:'POST',body:{sid:id,amount:n}})},
+  pending(){return rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=50')}
+};
+const adm={users:[],reports:[],pending:[],titles:{},sc:{},tab:'users',q:'',open:''};
+async function pageAdmin(){
+  const s=getSess();
+  if(!s||s.id!==OWNER_ID||!REMOTE){$('app').innerHTML='<div class="card empty"><h3>Not allowed</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
+  $('app').innerHTML='<div class="sk" style="height:240px"></div>';
+  try{
+    const [users,reports,pending]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[])]);
+    const ids=[...new Set(reports.map(r=>r.script_id))],titles={};
+    if(ids.length){try{const t=await rq(`/rest/v1/scripts?id=in.(${ids.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}catch(e){}}
+    Object.assign(adm,{users,reports,pending,titles,sc:{},open:''});
+    if(location.hash.slice(1).split('/')[0]!=='admin')return;
+    drawAdmin();
+  }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
+}
+function adUserRow(u){
+  const open=adm.open===u.id,t=u.tier?TIERS.find(x=>x[2]===u.tier):null;
+  const sc=adm.sc[u.id];
+  let more='';
+  if(open){
+    more=`<div class="adm"><div class="actions" style="margin:0 0 10px"><a class="btn sec" href="#user/${esc(u.id)}">Open profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">Badges</button></div>
+    <div class="adid">ID ${esc(u.id)}</div>
+    ${!sc?'<div class="hint">Loading scripts...</div>':!sc.length?'<div class="hint">No scripts yet.</div>':sc.map(x=>`<div class="ads" data-s="${esc(x.id)}"><div class="adst"><a class="ul" href="#script/${esc(x.id)}"><b>${esc(x.title)}</b></a><small>${ICON_EYE}${fmt(x.views)} views</small></div><div class="adc"><input type="number" class="adv" placeholder="Views (minus removes)" step="1"><button type="button" class="btn" data-add="${esc(x.id)}">Add</button></div><div class="adq"><button type="button" class="lnk" data-fill="1000">+1K</button><button type="button" class="lnk" data-fill="10000">+10K</button><button type="button" class="lnk" data-fill="100000">+100K</button><button type="button" class="lnk" data-fill="500000">+500K</button><button type="button" class="lnk dn" data-del="${esc(x.id)}">Delete script</button></div></div>`).join('')}</div>`;
+  }
+  return `<div class="adu${open?' open':''}"><button type="button" class="adh" data-u="${esc(u.id)}"><span class="adn"><b>${esc(u.username)}</b>${u.id===OWNER_ID?`<span class="owner">${ICON_SHIELD}Owner</span>`:''}${u.verified?ICON_VERIFIED:''}${t?`<span class="ctag ${t[2]}">${ICON_TIER[t[2]]}${esc(t[1])}</span>`:''}${u.tag?`<span class="ctag tc">${ICON_TAG}${esc(u.tag)}</span>`:''}<small>${esc(u.email||'')}</small></span><span class="adstat"><b>${u.scripts||0}</b> scripts<br><b>${fmt(u.views)}</b> views</span></button>
+  <div class="adsub">Joined ${esc(new Date(u.created_at).toLocaleDateString('en-US'))}${u.last_sign_in_at?' - last login '+esc(timeAgo(u.last_sign_in_at)):''}</div>${more}</div>`;
+}
+function drawAdUsers(){
+  const q=adm.q.trim().toLowerCase(),box=$('adList');if(!box)return;
+  const l=adm.users.filter(u=>!q||String(u.username||'').toLowerCase().includes(q)||String(u.email||'').toLowerCase().includes(q)||u.id.includes(q));
+  box.innerHTML=l.map(adUserRow).join('')||'<div class="empty"><h3>No users found</h3></div>';
+}
+function drawAdBody(){
+  const box=$('adBody');if(!box)return;
+  document.querySelectorAll('#adTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===adm.tab));
+  if(adm.tab==='users'){
+    box.innerHTML=`<input id="adQ" placeholder="Search name, email or ID" value="${esc(adm.q)}" style="margin-bottom:12px"><div id="adList"></div>`;
+    $('adQ').oninput=()=>{adm.q=$('adQ').value;drawAdUsers()};
+    drawAdUsers();
+  }else if(adm.tab==='reports'){
+    box.innerHTML=adm.reports.length?adm.reports.map(r=>`<div class="rpi"><div><b>${esc(r.reporter)}</b> reported <a class="ul" href="#script/${esc(r.script_id)}"><b>${esc(adm.titles[r.script_id]||'a script')}</b></a><small>${esc(timeAgo(r.created_at))}</small><p>${esc(r.reason)}${r.details?': '+esc(r.details):''}</p></div><button type="button" class="btn sec" data-x="${esc(r.id||'')}" data-sid="${esc(r.script_id)}" data-rp="${esc(r.reporter_id)}">Dismiss</button></div>`).join(''):'<div class="empty"><h3>No open reports</h3></div>';
+  }else{
+    box.innerHTML=adm.pending.length?adm.pending.map(v=>`<div class="rpi"><div><b>${esc(v.author)}</b> requested a verify badge<small>${esc(timeAgo(v.created_at))}</small></div><a class="btn sec" href="#user/${esc(v.user_id)}">Review</a></div>`).join(''):'<div class="empty"><h3>No pending requests</h3></div>';
+  }
+}
+function drawAdmin(){
+  const tv=adm.users.reduce((a,u)=>a+Number(u.views||0),0),ts=adm.users.reduce((a,u)=>a+(u.scripts||0),0);
+  $('app').innerHTML=`<section class="card"><h2>Admin panel</h2><div class="adstats"><div><b>${adm.users.length}</b><span>Users</span></div><div><b>${ts}</b><span>Scripts</span></div><div><b>${fmt(tv)}</b><span>Views</span></div><div><b>${adm.reports.length}</b><span>Reports</span></div><div><b>${adm.pending.length}</b><span>Verify requests</span></div></div>
+  <div class="seg2" id="adTabs" style="margin-bottom:14px"><button data-v="users">Users</button><button data-v="reports">Reports</button><button data-v="verify">Verify</button></div><div id="adBody"></div></section>`;
+  document.querySelectorAll('#adTabs button').forEach(b=>b.onclick=()=>{adm.tab=b.dataset.v;drawAdBody()});
+  $('adBody').onclick=adClick;
+  drawAdBody();
+}
+async function adClick(e){
+  const t=e.target.closest('button,a');if(!t)return;
+  try{
+    if(t.dataset.u){
+      const id=t.dataset.u;adm.open=adm.open===id?'':id;drawAdUsers();
+      if(adm.open&&!adm.sc[id]){adm.sc[id]=await DB.byUser(id);if(adm.open===id)drawAdUsers()}
+      return;
+    }
+    if(t.dataset.fill){const inp=t.closest('.ads').querySelector('.adv');inp.value=(parseInt(inp.value,10)||0)+Number(t.dataset.fill);return}
+    if(t.dataset.bd){if(await badgeEditor(t.dataset.bd,t.dataset.n)){adm.users=await Admin.users();drawAdUsers()}return}
+    if(t.dataset.add){
+      const row=t.closest('.ads'),n=parseInt(row.querySelector('.adv').value,10);
+      if(!n){toast('Enter a number',1);return}
+      t.disabled=true;
+      const sid=t.dataset.add,uid=adm.open,it=adm.sc[uid].find(x=>x.id===sid),old=Number(it.views)||0;
+      const v=Number(await Admin.addViews(sid,n));
+      it.views=v;const u=adm.users.find(x=>x.id===uid);if(u)u.views=Number(u.views)-old+v;
+      toast('Views updated');drawAdUsers();return;
+    }
+    if(t.dataset.del){
+      if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;
+      const sid=t.dataset.del,uid=adm.open,it=adm.sc[uid].find(x=>x.id===sid);
+      await DB.remove(sid);
+      adm.sc[uid]=adm.sc[uid].filter(x=>x.id!==sid);
+      const u=adm.users.find(x=>x.id===uid);if(u){u.scripts=Math.max(0,(u.scripts||0)-1);u.views=Math.max(0,Number(u.views)-(Number(it&&it.views)||0))}
+      toast('Script deleted');drawAdUsers();return;
+    }
+    if(t.dataset.x!==undefined&&t.dataset.sid){
+      const r=await rq(`/rest/v1/script_reports?script_id=eq.${encodeURIComponent(t.dataset.sid)}&reporter_id=eq.${encodeURIComponent(t.dataset.rp)}`,{method:'DELETE'});
+      adm.reports=adm.reports.filter(x=>!(x.script_id===t.dataset.sid&&x.reporter_id===t.dataset.rp));
+      toast('Report dismissed');drawAdBody();nLoad();return;
+    }
+  }catch(er){toast(er.message,1);if(t.disabled)t.disabled=false}
+}
 function route(){
   const h=location.hash.slice(1)||'home',[p,arg]=h.split('/');
   document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
   const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
   closeMenu();closeNotif();nLoad();
-  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,user:()=>pageUser(arg),script:()=>pageScript(arg)}[p]||pageHome)();
+  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,admin:pageAdmin,user:()=>pageUser(arg),script:()=>pageScript(arg)}[p]||pageHome)();
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
@@ -981,7 +1073,8 @@ function headerSync(){
   const a=$('tAcc');if(!a)return;
   const s=getSess(),img=s&&s.profile?dataImg(s.profile.avatar):'';
   a.innerHTML=img?`<img src="${esc(img)}" alt="">`:ICON_USER;
-  const mh=$('mHead'),mo=$('mOut');
+  const mh=$('mHead'),mo=$('mOut'),ma=$('mAdmin');
+  if(ma)ma.classList.toggle('hidden',!(s&&s.id===OWNER_ID&&REMOTE));
   if(mh)mh.innerHTML=s?`${avatarHTML(s.profile,s.username,40)}<span class="mt"><b>${esc(s.username)}</b><small>${esc(s.email)}</small></span>`:`<span class="av" style="width:40px;height:40px;background:var(--s3)">${ICON_USER}</span><span class="mt"><b>Welcome</b><small>Log in to publish scripts</small></span>`;
   if(mo)mo.classList.toggle('hidden',!s);
 }
