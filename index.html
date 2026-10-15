@@ -57,7 +57,7 @@ const UB={},NAMES={};
 const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
 function badgeHTML(id){
   const u=UB[id];if(!u)return '';
-  const t=tierOf(u.views);
+  const t=u.tier?TIERS.find(x=>x[2]===u.tier)||null:tierOf(u.views);
   return (u.verified?ICON_VERIFIED:'')+(t?`<span class="ctag ${t[2]}">${esc(t[1])}</span>`:'')+(u.tag?`<span class="ctag tc">${esc(u.tag)}</span>`:'');
 }
 const ownerTag=id=>(id===OWNER_ID?'<span class="owner">Owner</span>':'')+badgeHTML(id);
@@ -245,11 +245,14 @@ const DB={
       const all=LS.get('spl_scripts',[]);
       reps.forEach(r=>{if(!(r.script_id in titles)){const x=all.find(y=>y.id===r.script_id);if(x)titles[x.id]=x.title}});
     }
+    let vr=[];
+    if(s.id===OWNER_ID&&REMOTE){try{vr=await rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=30')}catch(e){}}
     const repIds=new Set(reps.map(r=>r.id));
     const out=[
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
       ...coms.filter(c=>!repIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
-      ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
+      ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
+      ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
@@ -276,34 +279,56 @@ const Badges={
   async ensure(ids){
     const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in UB));
     if(!need.length)return;
-    need.forEach(i=>{UB[i]={views:0,verified:false,tag:''}});
+    need.forEach(i=>{UB[i]={views:0,verified:false,tag:'',tier:''}});
     if(REMOTE){
       const ok=need.filter(isUUID);if(!ok.length)return;
       const list=ok.map(encodeURIComponent).join(',');
       try{
         const [v,b]=await Promise.all([
           rq(`/rest/v1/creator_views?user_id=in.(${list})&select=user_id,total_views`),
-          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag`)
+          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag,tier`)
         ]);
         v.forEach(r=>{UB[r.user_id].views=Number(r.total_views)||0});
-        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||''});
+        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||'';UB[r.user_id].tier=r.tier||''});
       }catch(e){}
       return;
     }
     const sc=LS.get('spl_scripts',[]),bd=LS.get('spl_badges',{});
     need.forEach(i=>{
       UB[i].views=sc.filter(x=>x.user_id===i).reduce((a,x)=>a+(x.views||0),0);
-      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||''}
+      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||'';UB[i].tier=bd[i].tier||''}
     });
   },
-  async save(id,verified,tag){
+  async save(id,verified,tag,tier){
     const t=String(tag||'').trim().slice(0,20);
     if(REMOTE){
-      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
     }else{
-      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t};LS.set('spl_badges',bd);
+      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||''};LS.set('spl_badges',bd);
     }
-    UB[id]={...(UB[id]||{views:0}),verified,tag:t};
+    UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||''};
+    if(verified)await Verify.clear(id);
+  }
+};
+const Verify={
+  async status(id){
+    if(REMOTE){if(!isUUID(id))return null;const r=await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}&select=status,created_at`);return r[0]||null}
+    return LS.get('spl_verify',{})[id]||null;
+  },
+  async request(){
+    const s=getSess();
+    if(REMOTE){await rq('/rest/v1/verify_requests',{method:'POST',body:{user_id:s.id,author:s.username,status:'pending'},headers:{Prefer:'return=minimal'}});return}
+    const a=LS.get('spl_verify',{});a[s.id]={author:s.username,status:'pending',created_at:new Date().toISOString()};LS.set('spl_verify',a);
+  },
+  async decline(id){
+    if(REMOTE){await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:{status:'rejected'},headers:{Prefer:'return=minimal'}});return}
+    const a=LS.get('spl_verify',{});if(a[id]){a[id].status='rejected';LS.set('spl_verify',a)}
+  },
+  async clear(id){
+    try{
+      if(REMOTE){await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+      const a=LS.get('spl_verify',{});delete a[id];LS.set('spl_verify',a);
+    }catch(e){}
   }
 };
 function badgeEditor(id,name){
@@ -311,14 +336,14 @@ function badgeEditor(id,name){
     await Badges.ensure([id]);
     const u=UB[id]||{},o=document.createElement('div');
     o.className='mo';
-    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tag appears as a label.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tier replaces the automatic creator tag. The custom tag appears as an extra label.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Creator tier</label><select id="bdTier"><option value="">Auto (by views)</option><option value="t1">Good Creator</option><option value="t2">Very Good Creator</option><option value="t3">Popular Creator</option><option value="t4">Famous Creator</option></select><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
     document.body.appendChild(o);
-    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';
+    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';$('bdTier').value=u.tier||'';
     const done=v=>{o.remove();res(v)};
     o.onclick=e=>{if(e.target===o)done(false)};
     o.querySelector('[data-r="0"]').onclick=()=>done(false);
     o.querySelector('[data-r="1"]').onclick=async()=>{
-      try{await Badges.save(id,$('bdV').checked,$('bdT').value);toast('Badges saved');done(true)}
+      try{await Badges.save(id,$('bdV').checked,$('bdT').value,$('bdTier').value);toast('Badges saved');done(true)}
       catch(e){$('bdM').innerHTML=`<div class="err">${esc(e.message)}</div>`}
     };
     $('bdT').focus();
@@ -344,7 +369,7 @@ const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
 function nRender(){
   const p=$('nPanel');
   if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and replies.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${N_VERB[n.type]||'interacted with'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):'#script/'+encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:n.type==='verify'?ICON_VERIFIED:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='verify'?'requested a verify badge':(N_VERB[n.type]||'interacted with')+' <b>'+esc(n.title||'your script')+'</b>'}</span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
   p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments and replies show up here.</div>'}`;
 }
 async function nLoad(){
@@ -931,7 +956,7 @@ function renderProfile(mine){
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
-    <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}</div>
+    <div class="pinfo"><h1>${esc(s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}<div id="vrArea"></div></div>
     <div class="pstats"><div><b>${mine.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
   <div class="grid2 eq">
     <div class="card"><h2>Edit profile</h2>
@@ -1001,10 +1026,29 @@ function renderProfile(mine){
   document.querySelectorAll('#mSort button').forEach(b=>b.onclick=()=>{mSort=b.dataset.v;drawMine()});
   $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
   drawMine();
+  initVerify(s.id);
   $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
   if($('cp'))$('cp').onclick=async()=>{
     if($('np').value.length<8){$('msg').innerHTML='<div class="err">New password is too short.</div>';return}
     try{await Auth.changePassword(REMOTE?'':$('op').value,$('np').value);$('msg').innerHTML='<div class="good">Password updated.</div>'}catch(e){$('msg').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+  };
+}
+async function initVerify(id){
+  const box=$('vrArea');if(!box)return;
+  const u=UB[id]||{views:0,verified:false,tag:'',tier:''};
+  if(u.verified){box.innerHTML='';return}
+  const eff=u.tier||(tierOf(u.views)||[0,'',''])[2],ok=eff==='t3'||eff==='t4';
+  let st=null;
+  try{st=await Verify.status(id)}catch(e){}
+  if(!$('vrArea'))return;
+  if(!ok){$('vrArea').innerHTML='<p class="hint">Request Verify unlocks at Popular Creator (500K views).</p>';return}
+  if(st&&st.status==='rejected'){$('vrArea').innerHTML='<p class="hint">Your verify request was declined.</p>';return}
+  if(st){$('vrArea').innerHTML='<button type="button" class="btn sec" disabled style="margin-top:12px">Verify requested</button>';return}
+  $('vrArea').innerHTML='<button type="button" class="btn" id="vrBtn" style="margin-top:12px">Request Verify</button><div id="vrMsg"></div>';
+  $('vrBtn').onclick=async()=>{
+    $('vrBtn').disabled=true;
+    try{await Verify.request();toast('Verify request sent');initVerify(id)}
+    catch(e){$('vrMsg').innerHTML=`<div class="err">${esc(e.message)}</div>`;$('vrBtn').disabled=false}
   };
 }
 async function pageUser(id){
@@ -1013,7 +1057,8 @@ async function pageUser(id){
   if(REMOTE&&!isUUID(id)){$('app').innerHTML='<div class="card empty"><h3>User not found</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
   $('app').innerHTML='<div class="sk" style="height:240px"></div>';
   try{
-    const [p,list]=await Promise.all([Prof.load(id),DB.byUser(id),Badges.ensure([id])]);
+    const adm=!!s&&s.id===OWNER_ID;
+    const [p,list,,vq]=await Promise.all([Prof.load(id),DB.byUser(id),Badges.ensure([id]),adm?Verify.status(id).catch(()=>null):null]);
     if((location.hash.slice(1).split('/')[1]||'')!==id)return;
     const name=NAMES[id]||(list[0]&&list[0].author)||p.username||'User';
     NAMES[id]=name;
@@ -1021,10 +1066,12 @@ async function pageUser(id){
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
     $('app').innerHTML=`<section class="prof"><div class="pban" style="background:${col}"></div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
-      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?'<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button></div>':''}</div>
+      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1><p class="pbio">${esc(p.bio||'')}</p>${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
       <div class="pstats"><div><b>${list.length}</b><span>Scripts</span></div><div><b>${fmt(views)}</b><span>Views</span></div><div><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
+    if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
+    if($('vdBtn'))$('vdBtn').onclick=async()=>{try{await Verify.decline(id);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
 }
 async function oauthReturn(){
