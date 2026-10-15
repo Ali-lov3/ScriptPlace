@@ -282,6 +282,17 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .cm .ch .dn{margin-left:auto;color:var(--mut);font-size:12.5px;font-weight:500}
 .cm .ch .dn:hover{color:var(--bad)}
 .cm .ct{margin-top:3px;white-space:pre-wrap;word-break:break-word;color:#d9d9de}
+.cact{display:flex;gap:14px;margin-top:6px}
+.cact button{color:var(--mut);font-size:12.5px;font-weight:600}
+.cact button:hover{color:var(--pink)}
+.reps{display:grid;margin-top:8px;border-left:2px solid var(--line);padding-left:14px}
+.cm.rp{padding:12px 0}
+.rform{margin-top:10px}
+.rform:empty{display:none}
+.rform textarea{min-height:64px;font-family:inherit;font-size:14px}
+.rform .cmfoot{margin-top:6px}
+.rbtns{display:flex;gap:8px}
+.rbtns .btn{padding:7px 14px;font-size:13px}
 
 .nh{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 10px;font-size:14px;font-weight:600}
 .ne{padding:28px 14px;text-align:center;color:var(--mut);font-size:13.5px}
@@ -294,6 +305,7 @@ textarea{resize:vertical;min-height:120px;font-family:ui-monospace,"SF Mono",Con
 .nic.like{color:var(--pink)}
 .nic.like svg{fill:currentColor}
 .nic.comment{color:#7aa7ff}
+.nic.reply{color:var(--good)}
 .nt{display:grid;gap:2px;min-width:0;font-size:13.5px;line-height:1.4;padding-right:16px}
 .nt small{color:var(--mut);font-size:12px}
 .nt .nq{color:#c4c4cc;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -510,41 +522,55 @@ const DB={
   async notifs(){
     const s=getSess();if(!s)return[];
     const mine=await DB.mine();
-    if(!mine.length)return[];
     const ids=mine.map(x=>x.id),titles={};
     mine.forEach(x=>titles[x.id]=x.title);
-    let likes,coms;
+    let likes=[],coms=[],reps=[];
     if(REMOTE){
-      const list=ids.map(encodeURIComponent).join(','),me=encodeURIComponent(s.id);
-      [likes,coms]=await Promise.all([
-        rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`),
-        rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
-      ]);
+      const me=encodeURIComponent(s.id),jobs=[rq(`/rest/v1/script_comments?user_id=eq.${me}&select=id&limit=500`)];
+      if(ids.length){
+        const list=ids.map(encodeURIComponent).join(',');
+        jobs.push(
+          rq(`/rest/v1/script_likes?script_id=in.(${list})&user_id=neq.${me}&select=script_id,user_id,author,created_at&order=created_at.desc&limit=50`),
+          rq(`/rest/v1/script_comments?script_id=in.(${list})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`)
+        );
+      }
+      const res=await Promise.all(jobs),myC=res[0];
+      if(ids.length){likes=res[1];coms=res[2]}
+      if(myC.length)reps=await rq(`/rest/v1/script_comments?parent_id=in.(${myC.map(x=>encodeURIComponent(x.id)).join(',')})&user_id=neq.${me}&select=id,script_id,user_id,author,body,created_at&order=created_at.desc&limit=50`);
+      const missing=[...new Set(reps.map(r=>r.script_id))].filter(i=>!(i in titles));
+      if(missing.length){try{const t=await rq(`/rest/v1/scripts?id=in.(${missing.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}catch(e){}}
     }else{
+      const cs=LS.get('spl_comments',[]),myIds=cs.filter(c=>c.user_id===s.id).map(c=>c.id);
       likes=LS.get('spl_likemeta',[]).filter(l=>ids.includes(l.script_id)&&l.user_id!==s.id);
-      coms=LS.get('spl_comments',[]).filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
+      coms=cs.filter(c=>ids.includes(c.script_id)&&c.user_id!==s.id);
+      reps=cs.filter(c=>myIds.includes(c.parent_id)&&c.user_id!==s.id);
+      const all=LS.get('spl_scripts',[]);
+      reps.forEach(r=>{if(!(r.script_id in titles)){const x=all.find(y=>y.id===r.script_id);if(x)titles[x.id]=x.title}});
     }
+    const repIds=new Set(reps.map(r=>r.id));
     const out=[
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
-      ...coms.map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
+      ...coms.filter(c=>!repIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
+      ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
   async comments(id){
-    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at&order=created_at.desc&limit=100`);
+    if(REMOTE)return rq(`/rest/v1/script_comments?script_id=eq.${encodeURIComponent(id)}&select=id,user_id,author,body,created_at,parent_id&order=created_at.desc&limit=500`);
     return LS.get('spl_comments',[]).filter(c=>c.script_id===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   },
-  async addComment(id,body){
-    const s=getSess();
-    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body},headers:{Prefer:'return=representation'}});return r[0]}
+  async addComment(id,body,parentId){
+    const s=getSess(),pid=parentId||null;
+    if(REMOTE){const r=await rq('/rest/v1/script_comments',{method:'POST',body:{script_id:id,user_id:s.id,author:s.username,body,parent_id:pid},headers:{Prefer:'return=representation'}});return r[0]}
     const all=LS.get('spl_comments',[]);
-    const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,created_at:new Date().toISOString()};
+    const n={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),script_id:id,user_id:s.id,author:s.username,body,parent_id:pid,created_at:new Date().toISOString()};
     all.push(n);LS.set('spl_comments',all);return n;
   },
   async removeComment(id){
     const s=getSess();
     if(REMOTE){await rq(`/rest/v1/script_comments?id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
-    LS.set('spl_comments',LS.get('spl_comments',[]).filter(c=>!(c.id===id&&c.user_id===s.id)));
+    const all=LS.get('spl_comments',[]);
+    if(all.some(c=>c.id===id&&c.user_id===s.id))LS.set('spl_comments',all.filter(c=>c.id!==id&&c.parent_id!==id));
   }
 };
 
@@ -562,11 +588,12 @@ const nKey=()=>{const s=getSess();return s?'spl_nread_'+s.id:''};
 function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return notifs.filter(n=>new Date(n.created_at).getTime()>t).length}
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
+const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
 function nRender(){
   const p=$('nPanel');
-  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes and comments on your scripts.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='like'?'liked':'commented on'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
-  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes and comments on your scripts show up here.</div>'}`;
+  if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and replies.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="#script/${encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${N_VERB[n.type]||'interacted with'} <b>${esc(n.title||'your script')}</b></span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments and replies show up here.</div>'}`;
 }
 async function nLoad(){
   if(!getSess()){notifs=[];nBadge();return}
@@ -810,8 +837,8 @@ async function initLikes(it){
 async function initComments(it){
   const form=$('cmForm');if(!form)return;
   const s=getSess();
-  const COOLDOWN=10*60*1000;
-  let list=[],profs={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0;
+  const COOLDOWN=10*60*1000,RCOOLDOWN=60*1000;
+  let list=[],profs={},posting=false,last=s?LS.get('spl_cm_'+s.id,0):0,lastR=s?LS.get('spl_rp_'+s.id,0):0;
   if(s){
     form.innerHTML=`<div class="cmform"><textarea id="cmIn" maxlength="500" placeholder="Write a comment..."></textarea><div class="cmfoot"><span class="hint" id="cmN">0 / 500</span><button type="button" class="btn" id="cmPost">Post comment</button></div><div id="cmMsg"></div></div>`;
     $('cmIn').addEventListener('input',()=>{$('cmN').textContent=$('cmIn').value.length+' / 500'});
@@ -837,15 +864,53 @@ async function initComments(it){
   }else{
     form.innerHTML='<p class="hint" style="margin:0 0 6px"><a href="#account" style="color:var(--pink);font-weight:700">Log in</a> to write a comment.</p>';
   }
+  const openForm=(pid,prefill)=>{
+    if(!getSess()){toast('Log in to reply',1);return}
+    document.querySelectorAll('.rform').forEach(f=>{f.innerHTML=''});
+    const box=$('rf-'+pid);if(!box)return;
+    box.innerHTML=`<textarea maxlength="500" id="rIn" placeholder="Write a reply...">${esc(prefill)}</textarea><div class="cmfoot"><span class="hint" id="rN">${prefill.length} / 500</span><div class="rbtns"><button type="button" class="btn sec" id="rCancel">Cancel</button><button type="button" class="btn" id="rPost">Reply</button></div></div><div id="rMsg"></div>`;
+    const inp=$('rIn');
+    inp.addEventListener('input',()=>{$('rN').textContent=inp.value.length+' / 500'});
+    $('rCancel').onclick=()=>{box.innerHTML=''};
+    $('rPost').onclick=async()=>{
+      const v=inp.value.trim(),m=$('rMsg');
+      if(!v){m.innerHTML='<div class="err">Write something first.</div>';return}
+      if(posting)return;
+      const wait=RCOOLDOWN-(Date.now()-lastR);
+      if(wait>0){m.innerHTML=`<div class="err">Slow down. You can reply again in ${Math.ceil(wait/1000)} s.</div>`;return}
+      posting=true;$('rPost').disabled=true;m.innerHTML='';
+      try{
+        const c=await DB.addComment(it.id,v,pid);
+        lastR=Date.now();
+        LS.set('spl_rp_'+getSess().id,lastR);
+        const cur=getSess();
+        if(cur&&cur.profile)profs[cur.id]=cur.profile;
+        list.push(c);
+        draw();
+      }catch(e){if($('rMsg'))$('rMsg').innerHTML=`<div class="err">${esc(e.message)}</div>`;if($('rPost'))$('rPost').disabled=false}
+      posting=false;
+    };
+    inp.focus();
+    inp.setSelectionRange(inp.value.length,inp.value.length);
+  };
   const draw=()=>{
     const box=$('cmList');if(!box)return;
     $('cmCount').textContent=list.length;
-    if(!list.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
+    const tops=list.filter(c=>!c.parent_id);
+    if(!tops.length){box.innerHTML='<p class="hint">No comments yet. Be the first.</p>';return}
+    const kids={};
+    list.filter(c=>c.parent_id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).forEach(c=>{(kids[c.parent_id]||(kids[c.parent_id]=[])).push(c)});
     const cur=getSess();
-    box.innerHTML=list.map(c=>`<div class="cm">${avatarHTML(profs[c.user_id],c.author,36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${cur&&(cur.id===c.user_id||cur.id===OWNER_ID)?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div></div></div>`).join('');
+    const one=(c,top)=>{
+      const reply=!!top,pid=reply?top.id:c.id,can=cur&&(cur.id===c.user_id||cur.id===OWNER_ID),k=reply?[]:(kids[c.id]||[]);
+      return `<div class="cm${reply?' rp':''}">${avatarHTML(profs[c.user_id],c.author,reply?28:36)}<div class="cb"><div class="ch"><b>${esc(c.author)}</b>${ownerTag(c.user_id)}<small>${esc(timeAgo(c.created_at))}</small>${can?`<button type="button" class="dn" data-d="${esc(c.id)}">Delete</button>`:''}</div><div class="ct">${esc(c.body)}</div><div class="cact"><button type="button" data-p="${esc(pid)}" data-n="${reply?esc(c.author):''}">Reply${k.length?` (${k.length})`:''}</button></div>${k.length?`<div class="reps">${k.map(x=>one(x,c)).join('')}</div>`:''}${reply?'':`<div class="rform" id="rf-${esc(c.id)}"></div>`}</div></div>`;
+    };
+    box.innerHTML=tops.map(c=>one(c,null)).join('');
+    box.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>openForm(b.dataset.p,b.dataset.n?'@'+b.dataset.n+' ':''));
     box.querySelectorAll('[data-d]').forEach(b=>b.onclick=async()=>{
-      if(!await ask('Delete this comment?','This comment will be removed for everyone.'))return;
-      try{await DB.removeComment(b.dataset.d);list=list.filter(x=>x.id!==b.dataset.d);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
+      const id=b.dataset.d,hasKids=list.some(x=>x.parent_id===id);
+      if(!await ask('Delete this comment?',hasKids?'This comment and all replies to it will be removed for everyone.':'This comment will be removed for everyone.'))return;
+      try{await DB.removeComment(id);list=list.filter(x=>x.id!==id&&x.parent_id!==id);draw();toast('Comment deleted')}catch(e){toast(e.message,1)}
     });
   };
   try{
@@ -1199,4 +1264,4 @@ async function oauthReturn(){
 oauthReturn().finally(route);
 </script>
 </body>
-  </html>
+</html>
