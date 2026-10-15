@@ -70,15 +70,17 @@ const ICON_FLAG=svgI('<path d="M5 22V4M5 4h12l-2 4 2 4H5"/>');
 const VERIFY_WAIT=10*60000;
 const REPORT_REASONS=['Malicious or harmful code','Stolen script','Scam or fake','Inappropriate content','Other'];
 const ICON_MAIL=svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>');
+const ICON_GIFT=svgI('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>');
 const ICON_CLOCK=svgI('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
 const TIMEOUT_OPTS=[[10,'10 minutes'],[60,'1 hour'],[1440,'1 day'],[10080,'7 days'],[43200,'30 days']];
 const UB={},NAMES={},NICKS={};
 const dn=(id,fb)=>(id&&NICKS[id])||fb||'';
 const NICK_RE=/^[\p{L}\p{N} _.\-]{2,24}$/u;
-const FRAMES=[['gold','Gold'],['violet','Violet'],['blue','Blue'],['green','Green'],['pink','Pink'],['ice','Ice'],['fire','Fire (animated)'],['rainbow','Rainbow (animated)']];
+const FRAMES=[['green','Emerald','r'],['blue','Sapphire','r'],['violet','Amethyst','r'],['sakura','Sakura','r'],['gold','Gold','e'],['pink','Hot Pink','e'],['ice','Frostbite','e'],['sunset','Sunset','e'],['toxic','Toxic','e'],['neon','Neon','e'],['blood','Blood Moon','e'],['rainbow','Rainbow','e'],['fire','Inferno','l'],['plasma','Plasma','l'],['electric','Storm','l'],['galaxy','Galaxy','l'],['void','Void','l'],['glitch','Glitch','l'],['diamond','Diamond','l'],['royal','Royal','l']];
+const RAR={c:['Common','#9aa0aa'],r:['Rare','#3b9cff'],e:['Epic','#a855f7'],l:['Legendary','#f5b84b']};
 const AUTO_FRAME={t1:'green',t2:'blue',t3:'violet',t4:'gold'};
 function frameFor(id,fv,tv){
-  const u=UB[id]||{},f=fv===undefined?(u.frame||''):fv;
+  const u=UB[id]||{},f=fv===undefined?(u.eq||''):(fv||'');
   if(f==='none')return '';
   if(f)return FRAMES.some(x=>x[0]===f)?f:'';
   if(id&&id===OWNER_ID)return 'pink';
@@ -330,18 +332,18 @@ const Badges={
   async ensure(ids){
     const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in UB));
     if(!need.length)return;
-    need.forEach(i=>{UB[i]={views:0,verified:false,tag:'',tier:'',frame:''}});
+    need.forEach(i=>{UB[i]={views:0,verified:false,tag:'',tier:'',eq:''}});
     if(REMOTE){
       const ok=need.filter(isUUID);if(!ok.length)return;
       const list=ok.map(encodeURIComponent).join(',');
-      const nkP=rq(`/rest/v1/profiles?id=in.(${list})&select=id,nickname`).then(nk=>nk.forEach(r=>{if(r.nickname)NICKS[r.id]=r.nickname})).catch(()=>{});
+      const nkP=rq(`/rest/v1/profiles?id=in.(${list})&select=id,nickname,frame`).then(nk=>nk.forEach(r=>{if(r.nickname)NICKS[r.id]=r.nickname;UB[r.id].eq=r.frame||''})).catch(()=>{});
       try{
         const [v,b]=await Promise.all([
           rq(`/rest/v1/creator_views?user_id=in.(${list})&select=user_id,total_views`),
-          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag,tier,frame`)
+          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag,tier`)
         ]);
         v.forEach(r=>{UB[r.user_id].views=Number(r.total_views)||0});
-        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||'';UB[r.user_id].tier=r.tier||'';UB[r.user_id].frame=r.frame||''});
+        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||'';UB[r.user_id].tier=r.tier||''});
       }catch(e){}
       await nkP;
       return;
@@ -350,17 +352,17 @@ const Badges={
     need.forEach(i=>{
       if(us[i]&&us[i].nickname)NICKS[i]=us[i].nickname;
       UB[i].views=sc.filter(x=>x.user_id===i).reduce((a,x)=>a+(x.views||0),0);
-      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||'';UB[i].tier=bd[i].tier||'';UB[i].frame=bd[i].frame||''}
+      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||'';UB[i].tier=bd[i].tier||''}
     });
   },
-  async save(id,verified,tag,tier,frame){
+  async save(id,verified,tag,tier){
     const t=String(tag||'').trim().slice(0,20),was=!!(UB[id]&&UB[id].verified);
     if(REMOTE){
-      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,frame:frame||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
     }else{
-      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||'',frame:frame||''};LS.set('spl_badges',bd);
+      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||''};LS.set('spl_badges',bd);
     }
-    UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||'',frame:frame||''};
+    UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||''};
     if(verified){await Verify.clear(id);if(!was){try{await Verify.notify(id,'approved')}catch(e){}}}
   }
 };
@@ -467,20 +469,115 @@ function badgeEditor(id,name){
     await Badges.ensure([id]);
     const u=UB[id]||{},o=document.createElement('div');
     o.className='mo';
-    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges and frame for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tier replaces the automatic creator tag. The custom tag appears as an extra label. The avatar frame is automatic for creator tiers unless you pick one.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Creator tier</label><select id="bdTier"><option value="">Auto (by views)</option><option value="t1">Good Creator</option><option value="t2">Very Good Creator</option><option value="t3">Popular Creator</option><option value="t4">Famous Creator</option></select><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><label>Avatar frame</label><div class="frrow"><select id="bdFr"><option value="">Auto (by creator tier)</option><option value="none">No frame</option>${FRAMES.map(f=>`<option value="${f[0]}">${esc(f[1])}</option>`).join('')}</select><span id="bdPrev"></span></div><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges and frame for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tier replaces the automatic creator tag. The custom tag appears as an extra label.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Creator tier</label><select id="bdTier"><option value="">Auto (by views)</option><option value="t1">Good Creator</option><option value="t2">Very Good Creator</option><option value="t3">Popular Creator</option><option value="t4">Famous Creator</option></select><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
     document.body.appendChild(o);
-    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';$('bdTier').value=u.tier||'';$('bdFr').value=u.frame||'';
-    const prev=()=>{$('bdPrev').innerHTML=avatarHTML({id,color:AV_COLORS[0],frame:$('bdFr').value,tier:$('bdTier').value,noimg:1},name||'?',56)};
-    $('bdFr').onchange=prev;$('bdTier').onchange=prev;prev();
+    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';$('bdTier').value=u.tier||'';
     const done=v=>{o.remove();res(v)};
     o.onclick=e=>{if(e.target===o)done(false)};
     o.querySelector('[data-r="0"]').onclick=()=>done(false);
     o.querySelector('[data-r="1"]').onclick=async()=>{
-      try{await Badges.save(id,$('bdV').checked,$('bdT').value,$('bdTier').value,$('bdFr').value);toast('Saved');done(true)}
+      try{await Badges.save(id,$('bdV').checked,$('bdT').value,$('bdTier').value);toast('Saved');done(true)}
       catch(e){$('bdM').innerHTML=`<div class="err">${esc(e.message)}</div>`}
     };
     $('bdT').focus();
   });
+}
+
+const Frames={
+  uid:'',
+  p:null,
+  owned:null,
+  load(force){
+    const s=getSess();
+    if(!s||!REMOTE){this.owned=[];return Promise.resolve([])}
+    if(this.uid!==s.id){this.uid=s.id;this.p=null;this.owned=null}
+    if(!force&&this.p)return this.p;
+    const run=async()=>{
+      if(s.id===OWNER_ID)return FRAMES.map(f=>f[0]);
+      const r=await rq(`/rest/v1/user_frames?user_id=eq.${encodeURIComponent(s.id)}&select=frame`);
+      return r.map(x=>x.frame).filter(f=>FRAMES.some(x=>x[0]===f));
+    };
+    this.p=run();
+    this.p.then(r=>{this.owned=r},()=>{this.p=null});
+    return this.p;
+  },
+  async of(uid){
+    const r=await rq(`/rest/v1/user_frames?user_id=eq.${encodeURIComponent(uid)}&select=frame`);
+    return r.map(x=>x.frame);
+  },
+  async gift(uid,add,del){
+    if(add.length)await rq('/rest/v1/user_frames?on_conflict=user_id,frame',{method:'POST',body:add.map(f=>({user_id:uid,frame:f})),headers:{Prefer:'resolution=ignore-duplicates,return=minimal'}});
+    if(del.length)await rq(`/rest/v1/user_frames?user_id=eq.${encodeURIComponent(uid)}&frame=in.(${del.map(encodeURIComponent).join(',')})`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  },
+  async equip(f){
+    const s=getSess();
+    await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(s.id)}`,{method:'PATCH',body:{frame:f},headers:{Prefer:'return=minimal'}});
+    UB[s.id]={...(UB[s.id]||{views:0}),eq:f||''};
+    LS.set('spl_sess',{...getSess(),profile:{...(getSess().profile||{}),frame:f}});
+    headerSync();
+  }
+};
+function frameTile(f,prev,cls,attr){
+  const r=RAR[f[2]];
+  return `<button type="button" class="frt${cls?' '+cls:''}" ${attr}><span class="frp">${prev}</span><b>${esc(f[1])}</b>${r?`<i style="color:${r[1]}">${r[0]}</i>`:''}</button>`;
+}
+function giftEditor(id,name){
+  return new Promise(async res=>{
+    let have;
+    try{have=await Frames.of(id)}catch(e){toast(e.message,1);res(false);return}
+    const orig=new Set(have.filter(f=>FRAMES.some(x=>x[0]===f))),sel=new Set(orig);
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md fgm" role="dialog" aria-modal="true" style="text-align:left"><h3>Frames for ${esc(name)}</h3><p>Tap a frame to gift it or take it back. Gifted frames can be equipped on the account page.</p><div class="frg ga" id="gfG"></div><div id="gfM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
+    document.body.appendChild(o);
+    $('gfG').innerHTML=FRAMES.map(f=>frameTile(f,avatarHTML({id,color:AV_COLORS[0],frame:f[0],noimg:1},name||'?',56),sel.has(f[0])?'on':'',`data-g="${f[0]}"`)).join('');
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{
+      if(e.target===o){done(false);return}
+      const b=e.target.closest('[data-g]');
+      if(!b)return;
+      const k=b.dataset.g;
+      if(sel.has(k)){sel.delete(k);b.classList.remove('on')}else{sel.add(k);b.classList.add('on')}
+    };
+    o.querySelector('[data-r="0"]').onclick=()=>done(false);
+    o.querySelector('[data-r="1"]').onclick=async()=>{
+      const add=[...sel].filter(f=>!orig.has(f)),del=[...orig].filter(f=>!sel.has(f));
+      if(!add.length&&!del.length){done(false);return}
+      try{
+        await Frames.gift(id,add,del);
+        if(add.length){try{await Msg.send(id,'message','You received new avatar frames: '+add.map(f=>(FRAMES.find(x=>x[0]===f)||[f,f])[1]).join(', ')+'. Equip them on your account page.')}catch(e){}}
+        toast('Frames saved');
+        done(true);
+      }catch(e){$('gfM').innerHTML=`<div class="err">${esc(e.message)}</div>`}
+    };
+  });
+}
+async function drawFrameCard(work){
+  const box=$('frBody'),s=getSess();
+  if(!box||!s)return;
+  if(!Frames.owned)box.innerHTML='<div class="sk" style="height:120px;margin-top:12px"></div>';
+  let owned;
+  try{owned=await Frames.load()}catch(e){if($('frBody'))$('frBody').innerHTML=`<div class="err">${esc(e.message)}</div>`;return}
+  const b=$('frBody');
+  if(!b)return;
+  const cur=(UB[s.id]||{}).eq||'';
+  const prev=f=>avatarHTML({...work,frame:f},s.username,56);
+  const mine=FRAMES.filter(f=>owned.includes(f[0])),locked=FRAMES.filter(f=>!owned.includes(f[0]));
+  const base=[[null,['','Automatic','']],['none',['none','No frame','']]];
+  b.innerHTML=`<div class="frg">${base.map(([v,f])=>frameTile(f,prev(v),(cur===f[0]?'on':''),`data-f="${f[0]}"`)).join('')}${mine.map(f=>frameTile(f,prev(f[0]),cur===f[0]?'on':'',`data-f="${f[0]}"`)).join('')}</div>${locked.length?`<p class="frsub">Not unlocked yet</p><div class="frg">${locked.map(f=>frameTile(f,prev(f[0]),'lock',`data-l="${f[0]}" aria-disabled="true"`)).join('')}</div>`:''}`;
+  b.onclick=async e=>{
+    const t=e.target.closest('[data-f]');
+    if(!t)return;
+    const v=t.dataset.f===''?null:t.dataset.f;
+    if(((UB[s.id]||{}).eq||'')===(v||''))return;
+    try{
+      await Frames.equip(v);
+      if($('pAv'))$('pAv').innerHTML=avatarHTML(work,s.username,88);
+      if($('eAv'))$('eAv').innerHTML=avatarHTML(work,s.username,80);
+      toast(v?(v==='none'?'Frame removed':'Frame equipped'):'Automatic frame');
+      drawFrameCard(work);
+    }catch(er){toast(er.message,1)}
+  };
 }
 
 function closeMenu(){$('menu').classList.add('hidden');$('tMenu').classList.remove('open')}
@@ -632,9 +729,9 @@ async function pageAdmin(){
   if(!s||s.id!==OWNER_ID||!REMOTE){$('app').innerHTML='<div class="card empty"><h3>Not allowed</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
   $('app').innerHTML='<div class="sk" style="height:240px"></div>';
   try{
-    const [users,reports,pending,tos,frs]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[]),Admin.timeouts().catch(()=>[]),rq('/rest/v1/user_badges?select=user_id,frame').catch(()=>[])]);
-    const fm=Object.fromEntries(frs.map(x=>[x.user_id,x.frame||'']));
-    users.forEach(u=>{UB[u.id]={views:Number(u.views)||0,verified:!!u.verified,tag:u.tag||'',tier:u.tier||'',frame:fm[u.id]||''}});
+    const [users,reports,pending,tos,frs]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[]),Admin.timeouts().catch(()=>[]),rq('/rest/v1/profiles?select=id,frame&frame=not.is.null&limit=1000').catch(()=>[])]);
+    const fm=Object.fromEntries(frs.map(x=>[x.id,x.frame||'']));
+    users.forEach(u=>{UB[u.id]={views:Number(u.views)||0,verified:!!u.verified,tag:u.tag||'',tier:u.tier||'',eq:fm[u.id]||''}});
     const ids=[...new Set(reports.map(r=>r.script_id))],titles={};
     if(ids.length){try{const t=await rq(`/rest/v1/scripts?id=in.(${ids.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}catch(e){}}
     Object.assign(adm,{users,reports,pending,titles,sc:{},open:'',to:Object.fromEntries(tos.map(x=>[x.user_id,x]))});
@@ -647,7 +744,7 @@ function adUserRow(u){
   const ci=[...String(u.id)].reduce((a,c)=>a+c.charCodeAt(0),0)%AV_COLORS.length;
   let more='';
   if(open){
-    more=`<div class="adm"><div class="actions admact"><a class="btn sec" href="#user/${esc(u.id)}">${ICON_USER}Profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_TAG}Badges and frame</button><button type="button" class="btn sec" data-um="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_MAIL}Message</button><button type="button" class="btn sec" data-ut="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_CLOCK}${adm.to[u.id]?'Remove timeout':'Timeout'}</button></div>
+    more=`<div class="adm"><div class="actions admact"><a class="btn sec" href="#user/${esc(u.id)}">${ICON_USER}Profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_TAG}Badges</button><button type="button" class="btn sec" data-gf="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_GIFT}Frames</button><button type="button" class="btn sec" data-um="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_MAIL}Message</button><button type="button" class="btn sec" data-ut="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_CLOCK}${adm.to[u.id]?'Remove timeout':'Timeout'}</button></div>
     <div class="adid">ID ${esc(u.id)}</div>
     ${!sc?'<div class="hint">Loading scripts...</div>':!sc.length?'<div class="hint">No scripts yet.</div>':sc.map(x=>`<div class="ads" data-s="${esc(x.id)}"><div class="adst"><a class="ul" href="#script/${esc(x.id)}"><b>${esc(x.title)}</b></a><small>${ICON_EYE}${fmt(x.views)} views</small></div><div class="adc"><input type="number" class="adv" placeholder="Views (minus removes)" step="1"><button type="button" class="btn" data-add="${esc(x.id)}">Add</button></div><div class="adq"><button type="button" class="lnk" data-fill="1000">+1K</button><button type="button" class="lnk" data-fill="10000">+10K</button><button type="button" class="lnk" data-fill="100000">+100K</button><button type="button" class="lnk" data-fill="500000">+500K</button><button type="button" class="lnk dn" data-del="${esc(x.id)}">Delete script</button></div></div>`).join('')}</div>`;
   }
@@ -704,6 +801,7 @@ async function adClick(e){
       adm.to[id]={user_id:id,until:new Date(Date.now()+r.minutes*60000).toISOString(),reason:r.reason};
       toast('User timed out');drawAdUsers();return;
     }
+    if(t.dataset.gf){await giftEditor(t.dataset.gf,t.dataset.n);return}
     if(t.dataset.bd){if(await badgeEditor(t.dataset.bd,t.dataset.n)){adm.users=await Admin.users();drawAdUsers()}return}
     if(t.dataset.add){
       const row=t.closest('.ads'),n=parseInt(row.querySelector('.adv').value,10);
@@ -1268,7 +1366,7 @@ function avatarHTML(p,name,size){
   const inner=sz=>`<span class="av" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="" style="${imgPos(p.avatar_t)}">`:esc((name||'?')[0].toUpperCase())}</span>`;
   if(!fr)return inner(size);
   const pw=size>=72?5:size>=44?4:2,gp=size>=72?3:size>=44?2:1;
-  return `<span class="avw fr-${fr}" style="width:${size}px;height:${size}px;padding:${pw}px;--g:${gp}px">${inner(size-2*pw)}</span>`;
+  return `<span class="avw fr-${fr}${size<44?' sm':''}" style="width:${size}px;height:${size}px;padding:${pw}px;--g:${gp}px;--s:${size}px;--pw:${pw}px">${inner(size-2*pw)}</span>`;
 }
 function headerSync(){
   const a=$('tAcc');if(!a)return;
@@ -1282,7 +1380,7 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,avatar_t,bio,link,color,username,nickname,banner,banner_t`);return r[0]?{...r[0],id}:{id}}catch(e){return{}}}
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,avatar_t,bio,link,color,username,nickname,banner,banner_t,frame`);return r[0]?{...r[0],id}:{id}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
     return u?{id,avatar:u.avatar||'',avatar_t:u.avatar_t||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',nickname:u.nickname||'',banner:u.banner||'',banner_t:u.banner_t||''}:{};
   },
@@ -1292,7 +1390,7 @@ const Prof={
     if(REMOTE){
       const ok=ids.filter(isUUID);
       if(!ok.length)return out;
-      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,avatar_t,color,nickname`);r.forEach(p=>{out[p.id]=p;if(p.nickname)NICKS[p.id]=p.nickname})}catch(e){}
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,avatar_t,color,nickname,frame`);r.forEach(p=>{out[p.id]=p;if(p.nickname)NICKS[p.id]=p.nickname})}catch(e){}
       return out;
     }
     const all=LS.get('spl_users',{});
@@ -1468,6 +1566,7 @@ function renderProfile(mine){
         <label>Current password</label><input type="password" id="op">
         <label>New password (min. 8 characters)</label><input type="password" id="np">
         <div class="actions"><button class="btn" id="cp">Update password</button></div><div id="msg"></div></div>`}
+      ${REMOTE?`<div class="card"><h2>Avatar frames</h2><p class="hint" style="margin:0">Choose the frame around your avatar. New frames are gifted by the owner.</p><div id="frBody"></div></div>`:''}
       <div class="card"><h2>Session</h2><div class="actions" style="margin-top:0"><button class="btn danger" id="logout">Log out</button></div></div>
     </div></div>
   <section class="mysec"><div class="rowh"><h2>Your scripts <span class="cnt">${mine.length}</span></h2><div class="rowact"><div class="seg2" id="mSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div><a class="btn" href="#publish" id="newBtn2">New script</a></div></div><div class="feed" id="myFeed"></div></section>`;
@@ -1480,6 +1579,7 @@ function renderProfile(mine){
     $('avAd').classList.toggle('hidden',!work.avatar);
     $('pAv').innerHTML=avatarHTML(work,s.username,88);
     $('eAv').innerHTML=avatarHTML(work,s.username,80);
+    drawFrameCard(work);
     $('rmBtn').classList.toggle('hidden',!work.avatar);
     $('sw').innerHTML=AV_COLORS.map(c=>`<button type="button" class="${c===work.color?'on':''}" data-c="${c}" style="background:${c}" aria-label="Color ${c}"></button>`).join('');
     $('sw').querySelectorAll('button').forEach(b=>b.onclick=()=>{work.color=b.dataset.c;paint()});
@@ -1598,10 +1698,11 @@ async function pageUser(id){
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
     $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}">${bannerImg(p)}</div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
-      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1>${name!==uname?`<span class="hint" style="margin:0">@${esc(uname)}</span>`:''}<p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
+      <div class="pinfo"><h1>${esc(name)}${ownerTag(id)}</h1>${name!==uname?`<span class="hint" style="margin:0">@${esc(uname)}</span>`:''}<p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="ufBtn">Frames</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
       <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${list.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div><div><i class="si">${ICON_CAL}</i><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
+    if(admin)$('ufBtn').onclick=()=>giftEditor(id,name);
     if(admin){
       $('umBtn').onclick=async()=>{const m=await askMessage(name);if(m===null)return;try{await Msg.send(id,'message',m);toast('Message sent')}catch(e){toast(e.message,1)}};
       $('utBtn').onclick=async()=>{
@@ -1610,7 +1711,7 @@ async function pageUser(id){
         try{await Timeout.set(id,r.minutes,r.reason);toast('User timed out');pageUser(id)}catch(e){toast(e.message,1)}
       };
     }
-    if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier,(UB[id]||{}).frame);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
+    if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
     if($('vdBtn'))$('vdBtn').onclick=async()=>{const r=await askReason(name);if(r===null)return;try{await Verify.decline(id,r);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
 }
