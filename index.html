@@ -73,6 +73,16 @@ const ICON_MAIL=svgI('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="
 const ICON_CLOCK=svgI('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>');
 const TIMEOUT_OPTS=[[10,'10 minutes'],[60,'1 hour'],[1440,'1 day'],[10080,'7 days'],[43200,'30 days']];
 const UB={},NAMES={};
+const FRAMES=[['gold','Gold'],['violet','Violet'],['blue','Blue'],['green','Green'],['pink','Pink'],['ice','Ice'],['fire','Fire (animated)'],['rainbow','Rainbow (animated)']];
+const AUTO_FRAME={t1:'green',t2:'blue',t3:'violet',t4:'gold'};
+function frameFor(id,fv,tv){
+  const u=UB[id]||{},f=fv===undefined?(u.frame||''):fv;
+  if(f==='none')return '';
+  if(f)return FRAMES.some(x=>x[0]===f)?f:'';
+  if(id&&id===OWNER_ID)return 'pink';
+  const tk=tv===undefined?(u.tier||''):tv,t=tk?TIERS.find(x=>x[2]===tk):tierOf(u.views||0);
+  return t?AUTO_FRAME[t[2]]||'':'';
+}
 const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
 function badgeHTML(id){
   const u=UB[id];if(!u)return '';
@@ -316,34 +326,34 @@ const Badges={
   async ensure(ids){
     const need=[...new Set(ids.filter(Boolean))].filter(i=>!(i in UB));
     if(!need.length)return;
-    need.forEach(i=>{UB[i]={views:0,verified:false,tag:'',tier:''}});
+    need.forEach(i=>{UB[i]={views:0,verified:false,tag:'',tier:'',frame:''}});
     if(REMOTE){
       const ok=need.filter(isUUID);if(!ok.length)return;
       const list=ok.map(encodeURIComponent).join(',');
       try{
         const [v,b]=await Promise.all([
           rq(`/rest/v1/creator_views?user_id=in.(${list})&select=user_id,total_views`),
-          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag,tier`)
+          rq(`/rest/v1/user_badges?user_id=in.(${list})&select=user_id,verified,tag,tier,frame`)
         ]);
         v.forEach(r=>{UB[r.user_id].views=Number(r.total_views)||0});
-        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||'';UB[r.user_id].tier=r.tier||''});
+        b.forEach(r=>{UB[r.user_id].verified=!!r.verified;UB[r.user_id].tag=r.tag||'';UB[r.user_id].tier=r.tier||'';UB[r.user_id].frame=r.frame||''});
       }catch(e){}
       return;
     }
     const sc=LS.get('spl_scripts',[]),bd=LS.get('spl_badges',{});
     need.forEach(i=>{
       UB[i].views=sc.filter(x=>x.user_id===i).reduce((a,x)=>a+(x.views||0),0);
-      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||'';UB[i].tier=bd[i].tier||''}
+      if(bd[i]){UB[i].verified=!!bd[i].verified;UB[i].tag=bd[i].tag||'';UB[i].tier=bd[i].tier||'';UB[i].frame=bd[i].frame||''}
     });
   },
-  async save(id,verified,tag,tier){
+  async save(id,verified,tag,tier,frame){
     const t=String(tag||'').trim().slice(0,20),was=!!(UB[id]&&UB[id].verified);
     if(REMOTE){
-      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
+      await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,frame:frame||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
     }else{
-      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||''};LS.set('spl_badges',bd);
+      const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||'',frame:frame||''};LS.set('spl_badges',bd);
     }
-    UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||''};
+    UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||'',frame:frame||''};
     if(verified){await Verify.clear(id);if(!was){try{await Verify.notify(id,'approved')}catch(e){}}}
   }
 };
@@ -450,14 +460,16 @@ function badgeEditor(id,name){
     await Badges.ensure([id]);
     const u=UB[id]||{},o=document.createElement('div');
     o.className='mo';
-    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tier replaces the automatic creator tag. The custom tag appears as an extra label.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Creator tier</label><select id="bdTier"><option value="">Auto (by views)</option><option value="t1">Good Creator</option><option value="t2">Very Good Creator</option><option value="t3">Popular Creator</option><option value="t4">Famous Creator</option></select><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Badges and frame for ${esc(name)}</h3><p>Verified shows a check mark next to the name. The tier replaces the automatic creator tag. The custom tag appears as an extra label. The avatar frame is automatic for creator tiers unless you pick one.</p><label style="display:flex;align-items:center;margin-top:0"><input type="checkbox" id="bdV">Verified</label><label>Creator tier</label><select id="bdTier"><option value="">Auto (by views)</option><option value="t1">Good Creator</option><option value="t2">Very Good Creator</option><option value="t3">Popular Creator</option><option value="t4">Famous Creator</option></select><label>Custom tag (max 20 characters)</label><input id="bdT" maxlength="20" placeholder="e.g. Developer"><label>Avatar frame</label><div class="frrow"><select id="bdFr"><option value="">Auto (by creator tier)</option><option value="none">No frame</option>${FRAMES.map(f=>`<option value="${f[0]}">${esc(f[1])}</option>`).join('')}</select><span id="bdPrev"></span></div><div id="bdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn" data-r="1">Save</button></div></div>`;
     document.body.appendChild(o);
-    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';$('bdTier').value=u.tier||'';
+    $('bdV').checked=!!u.verified;$('bdT').value=u.tag||'';$('bdTier').value=u.tier||'';$('bdFr').value=u.frame||'';
+    const prev=()=>{$('bdPrev').innerHTML=avatarHTML({id,color:AV_COLORS[0],frame:$('bdFr').value,tier:$('bdTier').value,noimg:1},name||'?',56)};
+    $('bdFr').onchange=prev;$('bdTier').onchange=prev;prev();
     const done=v=>{o.remove();res(v)};
     o.onclick=e=>{if(e.target===o)done(false)};
     o.querySelector('[data-r="0"]').onclick=()=>done(false);
     o.querySelector('[data-r="1"]').onclick=async()=>{
-      try{await Badges.save(id,$('bdV').checked,$('bdT').value,$('bdTier').value);toast('Badges saved');done(true)}
+      try{await Badges.save(id,$('bdV').checked,$('bdT').value,$('bdTier').value,$('bdFr').value);toast('Saved');done(true)}
       catch(e){$('bdM').innerHTML=`<div class="err">${esc(e.message)}</div>`}
     };
     $('bdT').focus();
@@ -602,13 +614,18 @@ const Admin={
   timeouts(){return rq(`/rest/v1/user_timeouts?until=gt.${encodeURIComponent(new Date().toISOString())}&select=user_id,until,reason`)},
   pending(){return rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=50')}
 };
-const adm={to:{},users:[],reports:[],pending:[],titles:{},sc:{},tab:'users',q:'',open:''};
+const adm={to:{},users:[],reports:[],pending:[],titles:{},sc:{},tab:'users',q:'',open:'',sort:'new'};
+const ICON_SEARCH=svgI('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>');
+const ICON_CHEV=svgI('<path d="M6 9l6 6 6-6"/>');
+const ICON_OK=svgI('<path d="M5 12l4.5 4.5L19 7"/>');
 async function pageAdmin(){
   const s=getSess();
   if(!s||s.id!==OWNER_ID||!REMOTE){$('app').innerHTML='<div class="card empty"><h3>Not allowed</h3><a class="btn" href="#home">Back to scripts</a></div>';return}
   $('app').innerHTML='<div class="sk" style="height:240px"></div>';
   try{
-    const [users,reports,pending,tos]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[]),Admin.timeouts().catch(()=>[])]);
+    const [users,reports,pending,tos,frs]=await Promise.all([Admin.users(),Report.open().catch(()=>[]),Admin.pending().catch(()=>[]),Admin.timeouts().catch(()=>[]),rq('/rest/v1/user_badges?select=user_id,frame').catch(()=>[])]);
+    const fm=Object.fromEntries(frs.map(x=>[x.user_id,x.frame||'']));
+    users.forEach(u=>{UB[u.id]={views:Number(u.views)||0,verified:!!u.verified,tag:u.tag||'',tier:u.tier||'',frame:fm[u.id]||''}});
     const ids=[...new Set(reports.map(r=>r.script_id))],titles={};
     if(ids.length){try{const t=await rq(`/rest/v1/scripts?id=in.(${ids.map(encodeURIComponent).join(',')})&select=id,title`);t.forEach(x=>titles[x.id]=x.title)}catch(e){}}
     Object.assign(adm,{users,reports,pending,titles,sc:{},open:'',to:Object.fromEntries(tos.map(x=>[x.user_id,x]))});
@@ -617,39 +634,45 @@ async function pageAdmin(){
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
 }
 function adUserRow(u){
-  const open=adm.open===u.id,t=u.tier?TIERS.find(x=>x[2]===u.tier):null;
-  const sc=adm.sc[u.id];
+  const open=adm.open===u.id,t=u.tier?TIERS.find(x=>x[2]===u.tier):null,sc=adm.sc[u.id];
+  const ci=[...String(u.id)].reduce((a,c)=>a+c.charCodeAt(0),0)%AV_COLORS.length;
   let more='';
   if(open){
-    more=`<div class="adm"><div class="actions" style="margin:0 0 10px"><a class="btn sec" href="#user/${esc(u.id)}">Open profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">Badges</button><button type="button" class="btn sec" data-um="${esc(u.id)}" data-n="${esc(u.username)}">Message</button><button type="button" class="btn sec" data-ut="${esc(u.id)}" data-n="${esc(u.username)}">${adm.to[u.id]?'Remove timeout':'Timeout'}</button></div>
+    more=`<div class="adm"><div class="actions admact"><a class="btn sec" href="#user/${esc(u.id)}">${ICON_USER}Profile</a><button type="button" class="btn sec" data-bd="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_TAG}Badges and frame</button><button type="button" class="btn sec" data-um="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_MAIL}Message</button><button type="button" class="btn sec" data-ut="${esc(u.id)}" data-n="${esc(u.username)}">${ICON_CLOCK}${adm.to[u.id]?'Remove timeout':'Timeout'}</button></div>
     <div class="adid">ID ${esc(u.id)}</div>
     ${!sc?'<div class="hint">Loading scripts...</div>':!sc.length?'<div class="hint">No scripts yet.</div>':sc.map(x=>`<div class="ads" data-s="${esc(x.id)}"><div class="adst"><a class="ul" href="#script/${esc(x.id)}"><b>${esc(x.title)}</b></a><small>${ICON_EYE}${fmt(x.views)} views</small></div><div class="adc"><input type="number" class="adv" placeholder="Views (minus removes)" step="1"><button type="button" class="btn" data-add="${esc(x.id)}">Add</button></div><div class="adq"><button type="button" class="lnk" data-fill="1000">+1K</button><button type="button" class="lnk" data-fill="10000">+10K</button><button type="button" class="lnk" data-fill="100000">+100K</button><button type="button" class="lnk" data-fill="500000">+500K</button><button type="button" class="lnk dn" data-del="${esc(x.id)}">Delete script</button></div></div>`).join('')}</div>`;
   }
-  return `<div class="adu${open?' open':''}"><button type="button" class="adh" data-u="${esc(u.id)}"><span class="adn"><b>${esc(u.username)}</b>${u.id===OWNER_ID?`<span class="owner">${ICON_SHIELD}Owner</span>`:''}${u.verified?ICON_VERIFIED:''}${t?`<span class="ctag ${t[2]}">${ICON_TIER[t[2]]}${esc(t[1])}</span>`:''}${u.tag?`<span class="ctag tc">${ICON_TAG}${esc(u.tag)}</span>`:''}<small>${esc(u.email||'')}</small></span><span class="adstat"><b>${u.scripts||0}</b> scripts<br><b>${fmt(u.views)}</b> views</span></button>
+  return `<div class="adu${open?' open':''}"><button type="button" class="adh" data-u="${esc(u.id)}"><span class="adav">${avatarHTML({id:u.id,color:AV_COLORS[ci]},u.username||'?',46)}</span><span class="adn"><span class="adnl"><b>${esc(u.username||'Unnamed')}</b>${u.id===OWNER_ID?`<span class="owner">${ICON_SHIELD}Owner</span>`:''}${u.verified?ICON_VERIFIED:''}${t?`<span class="ctag ${t[2]}">${ICON_TIER[t[2]]}${esc(t[1])}</span>`:''}${u.tag?`<span class="ctag tc">${ICON_TAG}${esc(u.tag)}</span>`:''}</span><small>${esc(u.email||'')}</small></span><span class="adstat"><span class="ach">${ICON_CODE}<b>${u.scripts||0}</b></span><span class="ach">${ICON_EYE}<b>${fmt(u.views)}</b></span></span><span class="adchev">${ICON_CHEV}</span></button>
   <div class="adsub">Joined ${esc(new Date(u.created_at).toLocaleDateString('en-US'))}${u.last_sign_in_at?' - last login '+esc(timeAgo(u.last_sign_in_at)):''}${adm.to[u.id]?' - <b class="adto">timed out until '+esc(new Date(adm.to[u.id].until).toLocaleString('en-US'))+'</b>':''}</div>${more}</div>`;
 }
 function drawAdUsers(){
   const q=adm.q.trim().toLowerCase(),box=$('adList');if(!box)return;
   const l=adm.users.filter(u=>!q||String(u.username||'').toLowerCase().includes(q)||String(u.email||'').toLowerCase().includes(q)||u.id.includes(q));
+  l.sort((x,y)=>adm.sort==='views'?Number(y.views||0)-Number(x.views||0):adm.sort==='scripts'?(y.scripts||0)-(x.scripts||0):new Date(y.created_at)-new Date(x.created_at));
   box.innerHTML=l.map(adUserRow).join('')||'<div class="empty"><h3>No users found</h3></div>';
 }
 function drawAdBody(){
   const box=$('adBody');if(!box)return;
   document.querySelectorAll('#adTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===adm.tab));
+  [['tnR',adm.reports.length],['tnV',adm.pending.length]].forEach(([id,n])=>{const e=$(id);if(e){e.textContent=n;e.classList.toggle('zero',!n)}});
   if(adm.tab==='users'){
-    box.innerHTML=`<input id="adQ" placeholder="Search name, email or ID" value="${esc(adm.q)}" style="margin-bottom:12px"><div id="adList"></div>`;
+    box.innerHTML=`<div class="adtool"><div class="sb">${ICON_SEARCH}<input id="adQ" placeholder="Search name, email or ID" value="${esc(adm.q)}"></div><div class="seg2" id="adSort"><button type="button" data-v="new">Newest</button><button type="button" data-v="views">Most views</button><button type="button" data-v="scripts">Most scripts</button></div></div><div id="adList"></div>`;
     $('adQ').oninput=()=>{adm.q=$('adQ').value;drawAdUsers()};
+    const sorts=()=>document.querySelectorAll('#adSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===adm.sort));
+    document.querySelectorAll('#adSort button').forEach(b=>b.onclick=()=>{adm.sort=b.dataset.v;sorts();drawAdUsers()});
+    sorts();
     drawAdUsers();
   }else if(adm.tab==='reports'){
-    box.innerHTML=adm.reports.length?adm.reports.map(r=>`<div class="rpi"><div><b>${esc(r.reporter)}</b> reported <a class="ul" href="#script/${esc(r.script_id)}"><b>${esc(adm.titles[r.script_id]||'a script')}</b></a><small>${esc(timeAgo(r.created_at))}</small><p>${esc(r.reason)}${r.details?': '+esc(r.details):''}</p></div><button type="button" class="btn sec" data-x="${esc(r.id||'')}" data-sid="${esc(r.script_id)}" data-rp="${esc(r.reporter_id)}">Dismiss</button></div>`).join(''):'<div class="empty"><h3>No open reports</h3></div>';
+    box.innerHTML=adm.reports.length?adm.reports.map(r=>`<div class="rpi"><span class="rpico">${ICON_FLAG}</span><div class="rpb"><b>${esc(r.reporter)}</b> reported <a class="ul" href="#script/${esc(r.script_id)}"><b>${esc(adm.titles[r.script_id]||'a script')}</b></a><small>${esc(timeAgo(r.created_at))}</small><p>${esc(r.reason)}${r.details?': '+esc(r.details):''}</p></div><button type="button" class="btn sec" data-x="${esc(r.id||'')}" data-sid="${esc(r.script_id)}" data-rp="${esc(r.reporter_id)}">Dismiss</button></div>`).join(''):'<div class="empty"><h3>No open reports</h3></div>';
   }else{
-    box.innerHTML=adm.pending.length?adm.pending.map(v=>`<div class="rpi"><div><b>${esc(v.author)}</b> requested a verify badge<small>${esc(timeAgo(v.created_at))}</small></div><a class="btn sec" href="#user/${esc(v.user_id)}">Review</a></div>`).join(''):'<div class="empty"><h3>No pending requests</h3></div>';
+    box.innerHTML=adm.pending.length?adm.pending.map(v=>`<div class="rpi"><span class="rpico ok">${ICON_OK}</span><div class="rpb"><b>${esc(v.author)}</b> requested a verify badge<small>${esc(timeAgo(v.created_at))}</small></div><a class="btn sec" href="#user/${esc(v.user_id)}">Review</a></div>`).join(''):'<div class="empty"><h3>No pending requests</h3></div>';
   }
 }
 function drawAdmin(){
   const tv=adm.users.reduce((a,u)=>a+Number(u.views||0),0),ts=adm.users.reduce((a,u)=>a+(u.scripts||0),0);
-  $('app').innerHTML=`<section class="card"><h2>Admin panel</h2><div class="adstats"><div><b>${adm.users.length}</b><span>Users</span></div><div><b>${ts}</b><span>Scripts</span></div><div><b>${fmt(tv)}</b><span>Views</span></div><div><b>${adm.reports.length}</b><span>Reports</span></div><div><b>${adm.pending.length}</b><span>Verify requests</span></div></div>
-  <div class="seg2" id="adTabs" style="margin-bottom:14px"><button data-v="users">Users</button><button data-v="reports">Reports</button><button data-v="verify">Verify</button></div><div id="adBody"></div></section>`;
+  const st=[[ICON_USER,'Users',adm.users.length,'#3b9cff'],[ICON_CODE,'Scripts',ts,'#a855f7'],[ICON_EYE,'Views',fmt(tv),'#3ecf8e'],[ICON_FLAG,'Reports',adm.reports.length,'#f0506a'],[ICON_OK,'Verify requests',adm.pending.length,'#f5b84b']];
+  $('app').innerHTML=`<section class="card"><div class="adhead"><div class="adico">${ICON_SHIELD}</div><div><h2>Admin panel</h2><p>Users, badges, avatar frames and reports</p></div></div><div class="adstats">${st.map(x=>`<div style="--c:${x[3]}"><i>${x[0]}</i><b>${x[2]}</b><span>${x[1]}</span></div>`).join('')}</div>
+  <div class="seg2 adtabs" id="adTabs"><button type="button" data-v="users">Users</button><button type="button" data-v="reports">Reports<i class="tn" id="tnR">${adm.reports.length}</i></button><button type="button" data-v="verify">Verify<i class="tn" id="tnV">${adm.pending.length}</i></button></div><div id="adBody"></div></section>`;
   document.querySelectorAll('#adTabs button').forEach(b=>b.onclick=()=>{adm.tab=b.dataset.v;drawAdBody()});
   $('adBody').onclick=adClick;
   drawAdBody();
@@ -1164,8 +1187,11 @@ const bannerCSS=(p,col)=>`background:${col}`;
 const bannerImg=p=>{const b=dataImg(p&&p.banner);return b?`<img class="pbi" src="${esc(b)}" alt="" style="${imgPos(p.banner_t)}">`:''};
 function avatarHTML(p,name,size){
   p=p||{};
-  const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],img=dataImg(p.avatar);
-  return `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="" style="${imgPos(p.avatar_t)}">`:esc((name||'?')[0].toUpperCase())}</span>`;
+  const col=AV_COLORS.includes(p.color)?p.color:AV_COLORS[0],img=p.noimg?'':dataImg(p.avatar),fr=frameFor(p.id,p.frame,p.tier);
+  const inner=sz=>`<span class="av" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.42)}px;background:${col}">${img?`<img src="${esc(img)}" alt="" style="${imgPos(p.avatar_t)}">`:esc((name||'?')[0].toUpperCase())}</span>`;
+  if(!fr)return inner(size);
+  const pw=size>=72?5:size>=44?4:2,gp=size>=72?3:size>=44?2:1;
+  return `<span class="avw fr-${fr}" style="width:${size}px;height:${size}px;padding:${pw}px;--g:${gp}px">${inner(size-2*pw)}</span>`;
 }
 function headerSync(){
   const a=$('tAcc');if(!a)return;
@@ -1179,9 +1205,9 @@ function headerSync(){
 const Prof={
   async load(id){
     if(!id)return{};
-    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,avatar_t,bio,link,color,username,banner,banner_t`);return r[0]||{}}catch(e){return{}}}
+    if(REMOTE){try{const r=await rq(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}&select=avatar,avatar_t,bio,link,color,username,banner,banner_t`);return r[0]?{...r[0],id}:{id}}catch(e){return{}}}
     const u=LS.get('spl_users',{})[id];
-    return u?{avatar:u.avatar||'',avatar_t:u.avatar_t||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',banner:u.banner||'',banner_t:u.banner_t||''}:{};
+    return u?{id,avatar:u.avatar||'',avatar_t:u.avatar_t||'',bio:u.bio||'',link:u.link||'',color:u.color||'',username:u.username||'',banner:u.banner||'',banner_t:u.banner_t||''}:{};
   },
   async many(ids){
     const out={};
@@ -1193,7 +1219,7 @@ const Prof={
       return out;
     }
     const all=LS.get('spl_users',{});
-    ids.forEach(id=>{const u=all[id];if(u)out[id]={avatar:u.avatar||'',avatar_t:u.avatar_t||'',color:u.color||''}});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={id,avatar:u.avatar||'',avatar_t:u.avatar_t||'',color:u.color||''}});
     return out;
   },
   async sync(){
@@ -1201,7 +1227,7 @@ const Prof={
     const p=await Prof.load(s.id);
     let created=s.created;
     try{if(REMOTE){const u=await rq('/auth/v1/user');created=u.created_at}else{const u=LS.get('spl_users',{})[s.id];if(u)created=u.created}}catch(e){}
-    LS.set('spl_sess',{...getSess(),profile:{...p,banner:''},created});
+    LS.set('spl_sess',{...getSess(),profile:{...p,id:s.id,banner:''},created});
     headerSync();
     return p;
   },
@@ -1209,7 +1235,7 @@ const Prof={
     const s=getSess();
     if(REMOTE){await rq('/rest/v1/profiles?on_conflict=id',{method:'POST',body:{id:s.id,...p},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}})}
     else{const all=LS.get('spl_users',{});if(!all[s.id])throw new Error('Account not found');Object.assign(all[s.id],p);LS.set('spl_users',all)}
-    LS.set('spl_sess',{...getSess(),profile:{...p,banner:''}});
+    LS.set('spl_sess',{...getSess(),profile:{...p,id:s.id,banner:''}});
     headerSync();
   }
 };
@@ -1340,7 +1366,7 @@ async function pageAccount(){
 function renderProfile(mine){
   const s=getSess(),p=s.profile||{},views=mine.reduce((a,x)=>a+(x.views||0),0);
   const since=s.created?new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
-  const work={avatar:dataImg(p.avatar),banner:dataImg(p.banner),avatar_t:fmtT(parseT(p.avatar_t)),banner_t:fmtT(parseT(p.banner_t)),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
+  const work={id:s.id,avatar:dataImg(p.avatar),banner:dataImg(p.banner),avatar_t:fmtT(parseT(p.avatar_t)),banner_t:fmtT(parseT(p.banner_t)),color:AV_COLORS.includes(p.color)?p.color:AV_COLORS[0]};
   const plink=safeUrl(p.link);
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
@@ -1500,7 +1526,7 @@ async function pageUser(id){
         try{await Timeout.set(id,r.minutes,r.reason);toast('User timed out');pageUser(id)}catch(e){toast(e.message,1)}
       };
     }
-    if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
+    if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier,(UB[id]||{}).frame);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
     if($('vdBtn'))$('vdBtn').onclick=async()=>{const r=await askReason(name);if(r===null)return;try{await Verify.decline(id,r);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
 }
