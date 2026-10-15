@@ -380,10 +380,8 @@ async function copy(t,label){try{await navigator.clipboard.writeText(t)}catch(e)
 async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
 async function icons(ids){if(!ids.length)return{};try{const d=await getJSON(`${PROXY.thumbs}/v1/games/icons?universeIds=${ids.join(',')}&size=256x256&format=Png&isCircular=false`);const m={};d.data.forEach(x=>m[x.targetId]=x.imageUrl);return m}catch(e){return{}}}
 const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',access:'free',executors:[],editId:null,rules:false});
-let draft=Object.assign(fresh(),LS.get('spl_draft',{}));
-if(draft.key==='yes'&&draft.access==='free')draft.access='key';
-delete draft.key;
-const saveDraft=()=>LS.set('spl_draft',draft);
+let draft=fresh();
+const saveDraft=()=>{};try{localStorage.removeItem('spl_draft')}catch(e){}
 const isUUID=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'');
 if(REMOTE){
   const _s=getSess();if(_s&&!_s.token)LS.set('spl_sess',null);
@@ -422,7 +420,7 @@ const Auth={
     LS.set('spl_sess',{id:u.email,email:u.email,username:u.username,created:u.created});
   },
   discord(){location.href=CFG.SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/authorize?provider=discord&redirect_to='+encodeURIComponent(location.origin+location.pathname)},
-  logout(){LS.set('spl_sess',null)},
+  logout(){LS.set('spl_sess',null);draft=fresh()},
   async changePassword(oldP,newP){
     if(REMOTE){await rq('/auth/v1/user',{method:'PUT',body:{password:newP}});return}
     const s=getSess(),all=LS.get('spl_users',{}),u=all[s.id];
@@ -1201,4 +1199,4 @@ async function oauthReturn(){
 oauthReturn().finally(route);
 </script>
 </body>
-</html>
+  </html>
