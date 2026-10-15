@@ -331,3 +331,7 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:32px 20px;borde
 .sc .by .ul:hover{text-decoration:underline}
 .nic.verify{color:#3b9cff}
 .nic .vf{margin:0;width:16px;height:16px}
+.ctag svg,.owner svg{width:11px;height:11px;margin-right:4px;vertical-align:-1px}
+.nic.verify_ok{color:#3b9cff}
+.nic.verify_no{color:#ff6b6b}
+.nic.verify_no+.nt .nq{white-space:normal}

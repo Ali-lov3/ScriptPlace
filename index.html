@@ -53,14 +53,24 @@ const ICON_TRASH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const OWNER_ID='53258b8b-2f10-4c07-9b18-aac9c4981288';
 const TIERS=[[1000000,'Famous Creator','t4'],[500000,'Popular Creator','t3'],[100000,'Very Good Creator','t2'],[10000,'Good Creator','t1']];
 const ICON_VERIFIED='<svg class="vf" viewBox="0 0 24 24" role="img" aria-label="Verified"><title>Verified</title><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const svgI=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+const ICON_DENY=svgI('<path d="M18 6L6 18M6 6l12 12"/>');
+const ICON_SHIELD=svgI('<path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6z"/>');
+const ICON_TAG=svgI('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>');
+const ICON_TIER={
+  t1:svgI('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+  t2:svgI('<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>'),
+  t3:svgI('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'),
+  t4:svgI('<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/>')
+};
 const UB={},NAMES={};
 const tierOf=v=>TIERS.find(t=>v>=t[0])||null;
 function badgeHTML(id){
   const u=UB[id];if(!u)return '';
   const t=u.tier?TIERS.find(x=>x[2]===u.tier)||null:tierOf(u.views);
-  return (u.verified?ICON_VERIFIED:'')+(t?`<span class="ctag ${t[2]}">${esc(t[1])}</span>`:'')+(u.tag?`<span class="ctag tc">${esc(u.tag)}</span>`:'');
+  return (u.verified?ICON_VERIFIED:'')+(t?`<span class="ctag ${t[2]}">${ICON_TIER[t[2]]}${esc(t[1])}</span>`:'')+(u.tag?`<span class="ctag tc">${ICON_TAG}${esc(u.tag)}</span>`:'');
 }
-const ownerTag=id=>(id===OWNER_ID?'<span class="owner">Owner</span>':'')+badgeHTML(id);
+const ownerTag=id=>(id===OWNER_ID?`<span class="owner">${ICON_SHIELD}Owner</span>`:'')+badgeHTML(id);
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -245,6 +255,9 @@ const DB={
       const all=LS.get('spl_scripts',[]);
       reps.forEach(r=>{if(!(r.script_id in titles)){const x=all.find(y=>y.id===r.script_id);if(x)titles[x.id]=x.title}});
     }
+    let vn=[];
+    if(REMOTE){try{vn=await rq(`/rest/v1/verify_notices?user_id=eq.${encodeURIComponent(s.id)}&select=status,reason,created_at&order=created_at.desc&limit=10`)}catch(e){}}
+    else vn=LS.get('spl_vnotices',[]).filter(x=>x.user_id===s.id);
     let vr=[];
     if(s.id===OWNER_ID&&REMOTE){try{vr=await rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=30')}catch(e){}}
     const repIds=new Set(reps.map(r=>r.id));
@@ -252,7 +265,8 @@ const DB={
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
       ...coms.filter(c=>!repIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
       ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
-      ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''}))
+      ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''})),
+      ...vn.map(v=>({type:v.status==='approved'?'verify_ok':'verify_no',script_id:'',user_id:s.id,author:'ScriptPlace',body:v.reason||'',created_at:v.created_at,title:''}))
     ];
     return out.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30);
   },
@@ -300,14 +314,14 @@ const Badges={
     });
   },
   async save(id,verified,tag,tier){
-    const t=String(tag||'').trim().slice(0,20);
+    const t=String(tag||'').trim().slice(0,20),was=!!(UB[id]&&UB[id].verified);
     if(REMOTE){
       await rq('/rest/v1/user_badges?on_conflict=user_id',{method:'POST',body:{user_id:id,verified,tag:t||null,tier:tier||null,updated_at:new Date().toISOString()},headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});
     }else{
       const bd=LS.get('spl_badges',{});bd[id]={verified,tag:t,tier:tier||''};LS.set('spl_badges',bd);
     }
     UB[id]={...(UB[id]||{views:0}),verified,tag:t,tier:tier||''};
-    if(verified)await Verify.clear(id);
+    if(verified){await Verify.clear(id);if(!was){try{await Verify.notify(id,'approved')}catch(e){}}}
   }
 };
 const Verify={
@@ -320,9 +334,19 @@ const Verify={
     if(REMOTE){await rq('/rest/v1/verify_requests',{method:'POST',body:{user_id:s.id,author:s.username,status:'pending'},headers:{Prefer:'return=minimal'}});return}
     const a=LS.get('spl_verify',{});a[s.id]={author:s.username,status:'pending',created_at:new Date().toISOString()};LS.set('spl_verify',a);
   },
-  async decline(id){
-    if(REMOTE){await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:{status:'rejected'},headers:{Prefer:'return=minimal'}});return}
-    const a=LS.get('spl_verify',{});if(a[id]){a[id].status='rejected';LS.set('spl_verify',a)}
+  async decline(id,reason){
+    if(REMOTE)await rq(`/rest/v1/verify_requests?user_id=eq.${encodeURIComponent(id)}`,{method:'PATCH',body:{status:'rejected'},headers:{Prefer:'return=minimal'}});
+    else{const a=LS.get('spl_verify',{});if(a[id]){a[id].status='rejected';LS.set('spl_verify',a)}}
+    await Verify.notify(id,'declined',reason);
+  },
+  async notify(id,status,reason){
+    const r=String(reason||'').trim().slice(0,300);
+    if(REMOTE){await rq('/rest/v1/verify_notices',{method:'POST',body:{user_id:id,status,reason:r||null},headers:{Prefer:'return=minimal'}});return}
+    const a=LS.get('spl_vnotices',[]);a.push({user_id:id,status,reason:r,created_at:new Date().toISOString()});LS.set('spl_vnotices',a);
+  },
+  async lastDecline(id){
+    if(REMOTE){if(!isUUID(id))return null;const r=await rq(`/rest/v1/verify_notices?user_id=eq.${encodeURIComponent(id)}&status=eq.declined&select=reason,created_at&order=created_at.desc&limit=1`);return r[0]||null}
+    return LS.get('spl_vnotices',[]).filter(x=>x.user_id===id&&x.status==='declined').pop()||null;
   },
   async clear(id){
     try{
@@ -331,6 +355,19 @@ const Verify={
     }catch(e){}
   }
 };
+function askReason(name){
+  return new Promise(res=>{
+    const o=document.createElement('div');
+    o.className='mo';
+    o.innerHTML=`<div class="md" role="dialog" aria-modal="true" style="text-align:left"><h3>Decline verify for ${esc(name)}</h3><p>The user gets a message with this reason.</p><label>Reason (max 300 characters)</label><textarea id="vdR" maxlength="300" rows="4" placeholder="e.g. Not enough original scripts yet"></textarea><div id="vdM"></div><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" data-r="0">Cancel</button><button type="button" class="btn danger" data-r="1">Decline</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{o.remove();res(v)};
+    o.onclick=e=>{if(e.target===o)done(null)};
+    o.querySelector('[data-r="0"]').onclick=()=>done(null);
+    o.querySelector('[data-r="1"]').onclick=()=>{const v=$('vdR').value.trim();if(!v){$('vdM').innerHTML='<div class="err">Please enter a reason.</div>';return}done(v)};
+    $('vdR').focus();
+  });
+}
 function badgeEditor(id,name){
   return new Promise(async res=>{
     await Badges.ensure([id]);
@@ -366,10 +403,18 @@ function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return noti
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
 const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
+const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY};
+const nHref=n=>n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):(n.type==='verify_ok'||n.type==='verify_no')?'#account':'#script/'+encodeURIComponent(n.script_id);
+function nText(n){
+  if(n.type==='verify')return `<b>${esc(n.author)}</b> requested a verify badge`;
+  if(n.type==='verify_ok')return 'Your verify request was approved. You are now verified.';
+  if(n.type==='verify_no')return 'Your verify request was declined.';
+  return `<b>${esc(n.author)}</b> ${N_VERB[n.type]||'interacted with'} <b>${esc(n.title||'your script')}</b>`;
+}
 function nRender(){
   const p=$('nPanel');
   if(!getSess()){p.innerHTML='<div class="nh"><b>Notifications</b></div><div class="ne">Log in to see likes, comments and replies.</div><a class="btn" href="#account" style="display:block;margin:0 6px 6px">Login</a>';return}
-  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):'#script/'+encodeURIComponent(n.script_id)}"><span class="nic ${n.type}">${n.type==='like'?ICON_HEART:n.type==='verify'?ICON_VERIFIED:ICON_CHAT}</span><span class="nt"><span><b>${esc(n.author)}</b> ${n.type==='verify'?'requested a verify badge':(N_VERB[n.type]||'interacted with')+' <b>'+esc(n.title||'your script')+'</b>'}</span>${n.body?`<span class="nq">${esc(n.body.slice(0,90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
+  const items=notifs.map(n=>`<a class="ni${new Date(n.created_at).getTime()>nSince?' new':''}" href="${nHref(n)}"><span class="nic ${n.type}">${N_ICON[n.type]||ICON_CHAT}</span><span class="nt"><span>${nText(n)}</span>${n.body?`<span class="nq">${n.type==='verify_no'?'Reason: ':''}${esc(n.body.slice(0,n.type==='verify_no'?300:90))}</span>`:''}<small>${esc(timeAgo(n.created_at))}</small></span></a>`).join('');
   p.innerHTML=`<div class="nh"><b>Notifications</b></div>${items||'<div class="ne">No notifications yet. Likes, comments and replies show up here.</div>'}`;
 }
 async function nLoad(){
@@ -1042,7 +1087,13 @@ async function initVerify(id){
   try{st=await Verify.status(id)}catch(e){}
   if(!$('vrArea'))return;
   if(!ok){$('vrArea').innerHTML='<p class="hint">Request Verify unlocks at Popular Creator (500K views).</p>';return}
-  if(st&&st.status==='rejected'){$('vrArea').innerHTML='<p class="hint">Your verify request was declined.</p>';return}
+  if(st&&st.status==='rejected'){
+    let dr=null;
+    try{dr=await Verify.lastDecline(id)}catch(e){}
+    if(!$('vrArea'))return;
+    $('vrArea').innerHTML='<p class="hint">Your verify request was declined.'+(dr&&dr.reason?' Reason: '+esc(dr.reason):'')+'</p>';
+    return;
+  }
   if(st){$('vrArea').innerHTML='<button type="button" class="btn sec" disabled style="margin-top:12px">Verify requested</button>';return}
   $('vrArea').innerHTML='<button type="button" class="btn" id="vrBtn" style="margin-top:12px">Request Verify</button><div id="vrMsg"></div>';
   $('vrBtn').onclick=async()=>{
@@ -1071,7 +1122,7 @@ async function pageUser(id){
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
     if($('vaBtn'))$('vaBtn').onclick=async()=>{try{await Badges.save(id,true,(UB[id]||{}).tag,(UB[id]||{}).tier);toast('User verified');pageUser(id)}catch(e){toast(e.message,1)}};
-    if($('vdBtn'))$('vdBtn').onclick=async()=>{try{await Verify.decline(id);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
+    if($('vdBtn'))$('vdBtn').onclick=async()=>{const r=await askReason(name);if(r===null)return;try{await Verify.decline(id,r);toast('Request declined');pageUser(id)}catch(e){toast(e.message,1)}};
   }catch(e){$('app').innerHTML=`<div class="card"><p class="err">${esc(e.message)}</p></div>`}
 }
 async function oauthReturn(){
