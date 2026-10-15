@@ -113,7 +113,7 @@ async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncod
 async function copy(t,label){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}toast(label||'Copied to clipboard')}
 async function getJSON(u){const r=await fetch(u);if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}
 async function icons(ids){if(!ids.length)return{};try{const d=await getJSON(`${PROXY.thumbs}/v1/games/icons?universeIds=${ids.join(',')}&size=256x256&format=Png&isCircular=false`);const m={};d.data.forEach(x=>m[x.targetId]=x.imageUrl);return m}catch(e){return{}}}
-const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',keyLink:'',access:'free',executors:[],editId:null,rules:false});
+const fresh=()=>({game:null,features:['Auto Farm'],title:'',description:'',code:'',link:'',keyLink:'',iconMode:'game',customIcon:'',customSrc:'',customT:'50,50,1',access:'free',executors:[],editId:null,rules:false});
 let draft=fresh();
 const saveDraft=()=>{};try{localStorage.removeItem('spl_draft')}catch(e){}
 const isUUID=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v||'');
@@ -744,7 +744,7 @@ const ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
 const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
 function cardHTML(it,link=true){
-  const img=safeUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
+  const img=iconUrl(it.icon),tag=link?'a':'div',href=link?` href="#script/${encodeURIComponent(it.id||'')}"`:'';
   if(it.user_id&&it.author)NAMES[it.user_id]=it.author;
   const an=dn(it.user_id,it.author||'you');
   const au=link&&it.user_id?`<span class="ul" data-u="${esc(it.user_id)}">${esc(an)}</span>`:esc(an);
@@ -921,7 +921,7 @@ async function pageScript(id){
     if(own||admin){
       if(admin)$('bdBtn').onclick=async()=>{if(await badgeEditor(it.user_id,it.author))pageScript(it.id)};
       if(admin)$('avBtn').onclick=async()=>{const n=await askViews(it.title);if(n===null)return;try{const v=await Admin.addViews(it.id,n);if($('vwN'))$('vwN').textContent=fmt(v);toast('Views updated')}catch(e){toast(e.message,1)}};
-      if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
+      if(own)$('edBtn').onclick=()=>{draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:isCustomIcon(it.icon)?'':it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',iconMode:isCustomIcon(it.icon)?'custom':'game',customIcon:isCustomIcon(it.icon)?it.icon:'',customSrc:'',customT:'50,50,1',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};saveDraft();go('publish')};
       $('delBtn').onclick=async()=>{if(!await ask('Delete this script?','This permanently removes the script together with its likes and comments.'))return;try{await DB.remove(it.id);toast('Script deleted');go(own?'mine':'home')}catch(e){toast(e.message,1)}};
     }
   }catch(e){$('app').innerHTML=`<div class="card"><h2>Something went wrong</h2><p class="err">${esc(e.message)}</p></div>`}
@@ -1049,7 +1049,7 @@ function pagePublish(){
   $('app').innerHTML=`<div class="rowh" style="margin-bottom:16px"><h1 style="margin:0;font-size:30px;letter-spacing:-.8px">${draft.editId?'Edit script':'Publish a script'}</h1></div>
   <div class="grid2"><div style="display:grid;gap:18px">
     <section class="card"><div class="step"><i>1</i><h2>Pick the game</h2></div>
-      <div id="gameArea"></div></section>
+      <div id="gameArea"></div><div id="iconArea"></div></section>
     <section class="card"><div class="step"><i>2</i><h2>Details</h2></div>
       <label>Title</label><input id="title" maxlength="80" placeholder="e.g. Blox Fruits Auto Farm | No Key">
       <label>Description</label><textarea id="desc" style="min-height:90px;font-family:inherit" maxlength="2000" placeholder="What does it do? How do you use it?"></textarea>
@@ -1079,7 +1079,7 @@ function pagePublish(){
   $('clearBtn').onclick=()=>{draft=fresh();saveDraft();pagePublish()};
 }
 function codeInfo(){const el=$('codeInfo');if(el)el.textContent=draft.code?`${draft.code.split('\n').length} lines, ${draft.code.length.toLocaleString('en-US')} characters`:''}
-function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:g?g.icon:'',views:0,author:s?dn(s.id,s.username):'you',user_id:s?s.id:'',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
+function renderPreview(){const el=$('preview');if(!el)return;const s=getSess(),g=draft.game;el.innerHTML=cardHTML({title:draft.title||'Your script title',game_name:g?g.name:'Pick a game',icon:draftIcon(),views:0,author:s?dn(s.id,s.username):'you',user_id:s?s.id:'',key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,features:draft.features},false)}
 function addFeat(){const v=$('featIn').value.trim().slice(0,40);if(!v)return;if(!draft.features.includes(v))draft.features.push(v);$('featIn').value='';saveDraft();renderChips();renderPreview()}
 function renderChips(){
   const box=$('featChips');box.innerHTML='';
@@ -1104,6 +1104,7 @@ function pickGame(g){
 }
 function renderGameArea(){
   const a=$('gameArea');if(!a)return;const g=draft.game;
+  renderIconArea();
   if(g){
     a.innerHTML=`<div class="sel"><img src="${esc(safeUrl(g.icon))}" alt=""><div class="t"><b>${esc(g.name)}</b><small style="color:var(--mut)">Place ${esc(g.placeId)}${g.playing!=null?', '+fmt(g.playing)+' playing':''}</small></div><button class="btn sec" id="chg">Change</button></div>`;
     $('chg').onclick=()=>{draft.game=null;saveDraft();renderGameArea();renderPreview()};return;
@@ -1158,10 +1159,13 @@ async function publish(){
   if(link&&!safeUrl(link))return bad('The link must start with https://');
   const keyLink=draft.access==='key'?(draft.keyLink||'').trim():'';
   if(keyLink&&!safeUrl(keyLink))return bad('The key link must start with https://');
+  if(draft.iconMode==='custom'&&!draft.customIcon)return bad('Upload a custom image or switch back to the game image.');
   if(!draft.rules)return bad('Please confirm the script rules.');
   $('pubBtn').disabled=true;
   try{
-    const saved=await DB.save({title,description:draft.description.trim(),game_name:g.name,place_id:Number(g.placeId)||null,universe_id:Number(g.universeId)||null,icon:safeUrl(g.icon)||'',features:draft.features,key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,code,link,key_link:keyLink||null},draft.editId);
+    let icon=safeUrl(g.icon)||'';
+    if(draft.iconMode==='custom'){icon=/^data:/.test(draft.customIcon)?await Img.upload(draft.customIcon):draft.customIcon;draft.customIcon=icon}
+    const saved=await DB.save({title,description:draft.description.trim(),game_name:g.name,place_id:Number(g.placeId)||null,universe_id:Number(g.universeId)||null,icon,features:draft.features,key_system:draft.access==='key',paid:draft.access==='paid',executors:draft.executors,code,link,key_link:keyLink||null},draft.editId);
     toast(draft.editId?'Changes saved':'Published');draft=fresh();saveDraft();go('script/'+saved.id);
   }catch(e){bad(e.message);$('pubBtn').disabled=false}
 }
@@ -1196,6 +1200,66 @@ const fmtT=t=>[t.x,t.y,t.z].map(n=>Math.round(n*100)/100).join(',');
 const imgPosT=t=>`object-position:${t.x}% ${t.y}%;transform:scale(${t.z});transform-origin:${t.x}% ${t.y}%`;
 const imgPos=s=>imgPosT(parseT(s));
 const dataImg=v=>/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v||'')?v:'';
+const isCustomIcon=u=>/\/storage\/v1\/object\/public\/script-images\//.test(u||'');
+const iconUrl=u=>safeUrl(u)||dataImg(u);
+const draftIcon=()=>draft.iconMode==='custom'?(draft.customIcon||''):(draft.game?draft.game.icon:'');
+function cropSquare(src,tStr){
+  return new Promise((res,rej)=>{
+    const im=new Image();
+    im.onload=()=>{
+      const S=512,t=parseT(tStr),nw=im.naturalWidth||1,nh=im.naturalHeight||1,c=Math.max(S/nw,S/nh),dw=nw*c,dh=nh*c;
+      const ox=(S-dw)*t.x/100,oy=(S-dh)*t.y/100,Ox=S*t.x/100,Oy=S*t.y/100;
+      const X=Ox+t.z*(ox-Ox),Y=Oy+t.z*(oy-Oy);
+      const cv=document.createElement('canvas');cv.width=S;cv.height=S;
+      const cx=cv.getContext('2d');cx.fillStyle='#1c1c24';cx.fillRect(0,0,S,S);
+      cx.drawImage(im,X,Y,dw*t.z,dh*t.z);
+      res(cv.toDataURL('image/jpeg',.88));
+    };
+    im.onerror=()=>rej(new Error('Could not read this image.'));
+    im.src=src;
+  });
+}
+const Img={
+  async upload(dataUrl){
+    if(!REMOTE)return dataUrl;
+    const blob=await (await fetch(dataUrl)).blob();
+    const base=CFG.SUPABASE_URL.replace(/\/$/,'');
+    for(let tryN=0;tryN<2;tryN++){
+      const s=getSess();if(!s)throw new Error('Please log in again.');
+      const path=`${s.id}/${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}.jpg`;
+      const r=await fetch(base+'/storage/v1/object/script-images/'+path,{method:'POST',headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'image/jpeg'},body:blob});
+      if(r.status===401&&tryN===0&&s.refresh&&await refreshTok())continue;
+      if(!r.ok){let m='Image upload failed ('+r.status+')';try{const j=await r.json();m=j.message||j.error||m}catch(e){}throw new Error(m)}
+      return base+'/storage/v1/object/public/script-images/'+path;
+    }
+    throw new Error('Image upload failed.');
+  }
+};
+async function pickIcon(f){
+  if(!/^image\/(png|jpe?g|webp)$/i.test(f.type))throw new Error('Choose a PNG, JPG or WebP image.');
+  if(f.size>8*1024*1024)throw new Error('That image is larger than 8 MB.');
+  const src=await readStatic(f,1400),t=await adjustImage('icon',src,'50,50,1');
+  if(t===null)return;
+  draft.customSrc=src;draft.customT=t;draft.customIcon=await cropSquare(src,t);draft.iconMode='custom';
+  renderIconArea();renderPreview();
+}
+function renderIconArea(){
+  const a=$('iconArea');if(!a)return;
+  if(!draft.game){a.innerHTML='';return}
+  const m=draft.iconMode==='custom'?'custom':'game';
+  if(m==='game'&&!safeUrl(draft.game.icon)&&draft.game.universeId&&!draft._gi){
+    draft._gi=1;const uid=draft.game.universeId;
+    icons([uid]).then(r=>{if(draft.game&&draft.game.universeId===uid&&r[uid]){draft.game.icon=r[uid];renderGameArea();renderPreview()}});
+  }
+  a.innerHTML=`<label>Script image</label><div class="seg2" id="icMode"><button type="button" data-m="game" class="${m==='game'?'on':''}">Game image</button><button type="button" data-m="custom" class="${m==='custom'?'on':''}">Custom image</button></div>${m==='custom'?`<div class="icrow"><span class="icprev">${draft.customIcon?`<img src="${esc(iconUrl(draft.customIcon))}" alt="">`:''}</span><div class="avtxt"><p class="hint">Square image. PNG, JPG or WebP. You can move and zoom it.</p><div class="avact"><button type="button" class="lnk up" id="icUp">${draft.customIcon?'Replace':'Upload image'}</button>${draft.customSrc?'<button type="button" class="lnk ad" id="icAd">Adjust</button>':''}${draft.customIcon?'<button type="button" class="lnk dn" id="icRm">Remove</button>':''}</div></div><input type="file" id="icFile" accept="image/png,image/jpeg,image/webp" class="hidden"></div>`:''}`;
+  a.querySelectorAll('#icMode [data-m]').forEach(b=>b.onclick=()=>{draft.iconMode=b.dataset.m;renderIconArea();renderPreview()});
+  if(m==='custom'){
+    $('icUp').onclick=()=>$('icFile').click();
+    $('icFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{await pickIcon(f)}catch(err){toast(err.message,1)}};
+    if($('icAd'))$('icAd').onclick=async()=>{const t=await adjustImage('icon',draft.customSrc,draft.customT||'50,50,1');if(t===null)return;try{draft.customT=t;draft.customIcon=await cropSquare(draft.customSrc,t);renderIconArea();renderPreview()}catch(err){toast(err.message,1)}};
+    if($('icRm'))$('icRm').onclick=()=>{draft.customIcon='';draft.customSrc='';draft.customT='50,50,1';renderIconArea();renderPreview()};
+  }
+}
 const bannerCSS=(p,col)=>`background:${col}`;
 const bannerImg=p=>{const b=dataImg(p&&p.banner);return b?`<img class="pbi" src="${esc(b)}" alt="" style="${imgPos(p.banner_t)}">`:''};
 function avatarHTML(p,name,size){
@@ -1318,7 +1382,7 @@ function adjustImage(kind,src,tStr){
     let t=parseT(tStr),drag=null;
     const o=document.createElement('div');
     o.className='mo';
-    o.innerHTML=`<div class="md ae" role="dialog" aria-modal="true"><h3>${kind==='avatar'?'Adjust profile photo':'Adjust banner'}</h3><p>Drag the image to move it. Use the slider or the mouse wheel to zoom.</p><div class="aefr ${kind}" id="aeF"><img id="aeI" alt="" draggable="false" src="${esc(src)}"></div><label>Zoom</label><input type="range" id="aeZ" min="1" max="4" step="0.01"><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" id="aeR">Reset</button><button type="button" class="btn sec" id="aeC">Cancel</button><button type="button" class="btn" id="aeA">Apply</button></div></div>`;
+    o.innerHTML=`<div class="md ae" role="dialog" aria-modal="true"><h3>${kind==='avatar'?'Adjust profile photo':kind==='icon'?'Adjust script image':'Adjust banner'}</h3><p>Drag the image to move it. Use the slider or the mouse wheel to zoom.</p><div class="aefr ${kind}" id="aeF"><img id="aeI" alt="" draggable="false" src="${esc(src)}"></div><label>Zoom</label><input type="range" id="aeZ" min="1" max="4" step="0.01"><div class="mbtn" style="margin-top:18px"><button type="button" class="btn sec" id="aeR">Reset</button><button type="button" class="btn sec" id="aeC">Cancel</button><button type="button" class="btn" id="aeA">Apply</button></div></div>`;
     document.body.appendChild(o);
     const F=$('aeF'),I=$('aeI'),Z=$('aeZ');
     const paintT=()=>{I.style.cssText=imgPosT(t);Z.value=t.z};
@@ -1469,7 +1533,7 @@ function renderProfile(mine){
     box.querySelectorAll('[data-e]').forEach(b=>b.onclick=async()=>{
       try{
         const it=await DB.get(b.dataset.e);if(!it)throw new Error('Script not found');
-        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
+        draft={game:it.game_name?{name:it.game_name,placeId:it.place_id,universeId:it.universe_id,icon:isCustomIcon(it.icon)?'':it.icon}:null,features:it.features||[],title:it.title,description:it.description||'',code:it.code,link:it.link||'',keyLink:it.key_link||'',iconMode:isCustomIcon(it.icon)?'custom':'game',customIcon:isCustomIcon(it.icon)?it.icon:'',customSrc:'',customT:'50,50,1',access:it.paid?'paid':(it.key_system?'key':'free'),executors:it.executors||[],editId:it.id,rules:true};
         saveDraft();go('publish');
       }catch(e){toast(e.message,1)}
     });
