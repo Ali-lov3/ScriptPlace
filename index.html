@@ -857,8 +857,8 @@ async function pageScript(id){
     DB.view(id);
     await Badges.ensure([it.user_id]);
     const s=getSess(),own=!!s&&s.id===it.user_id,admin=!!s&&s.id===OWNER_ID,img=safeUrl(it.icon),link=safeUrl(it.link);
-    $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div style="flex:1;min-width:220px"><h1>${esc(it.title)}</h1>
-      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div><small>Author</small><b class="who" id="auth"><a class="ul" href="#user/${encodeURIComponent(it.user_id)}">${esc(it.author)}</a>${ownerTag(it.user_id)}</b></div><div><small>Views</small><b id="vwN">${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
+    $('app').innerHTML=`<div class="dhero">${img?`<img class="ic" src="${esc(img)}" alt="">`:''}<div class="dmain"><h1>${esc(it.title)}</h1>
+      <div class="facts"><div><small>Game</small><b>${esc(it.game_name||'Universal')}</b></div><div class="fa"><small>Author</small><b class="who" id="auth"><a class="ul" href="#user/${encodeURIComponent(it.user_id)}">${esc(it.author)}</a>${ownerTag(it.user_id)}</b></div><div><small>Views</small><b id="vwN">${fmt((it.views||0)+1)}</b></div><div><small>Added</small><b>${new Date(it.created_at).toLocaleDateString('en-US')}</b></div><div><small>Access</small><b>${accessLabel(it)}</b></div></div></div>
       ${own||admin?`<div class="actions" style="margin:0">${own?'<button class="btn sec" id="edBtn">Edit</button>':''}${admin?'<button class="btn sec" id="avBtn">Add views</button><button class="btn sec" id="bdBtn">Author badges</button>':''}<button class="btn danger" id="delBtn">Delete</button></div>`:''}</div>
     <div class="grid2"><div class="card"><h2>Script</h2>
       <div class="code"><div class="bar"><span>script.lua</span><span id="lines"></span></div><pre id="code"></pre></div>
