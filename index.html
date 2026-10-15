@@ -1631,6 +1631,117 @@ async function oauthReturn(){
   }catch(e){toast(e.message,1)}
 }
 oauthReturn().finally(route);
+(function(){
+  const CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const valDesc=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+  let cur=null,lastPick=0;
+  function closeDd(){
+    if(!cur)return;
+    cur.list.remove();
+    cur.wrap.classList.remove('open');
+    cur.btn.setAttribute('aria-expanded','false');
+    cur=null;
+  }
+  function openDd(sel,wrap,btn){
+    if(cur&&cur.sel===sel){closeDd();return}
+    closeDd();
+    const opts=[...sel.options];
+    if(!opts.length)return;
+    const list=document.createElement('div');
+    list.className='ddlist';
+    list.setAttribute('role','listbox');
+    list.innerHTML=opts.map((o,i)=>`<div class="ddo${i===sel.selectedIndex?' on':''}" role="option" aria-selected="${i===sel.selectedIndex}" data-i="${i}"><span>${esc(o.textContent)}</span>${CHECK}</div>`).join('');
+    document.body.appendChild(list);
+    const r=btn.getBoundingClientRect();
+    const below=window.innerHeight-r.bottom-14,above=r.top-14;
+    const natural=Math.min(list.scrollHeight,280);
+    const up=below<Math.min(natural,200)&&above>below;
+    list.style.left=r.left+'px';
+    list.style.width=r.width+'px';
+    list.style.maxHeight=Math.max(120,Math.min(280,up?above:below))+'px';
+    if(up){list.style.bottom=(window.innerHeight-r.top+6)+'px';list.classList.add('up')}
+    else list.style.top=(r.bottom+6)+'px';
+    wrap.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+    const items=[...list.children];
+    let act=Math.max(0,sel.selectedIndex);
+    const setAct=(i,scroll)=>{
+      act=i;
+      items.forEach((e,k)=>e.classList.toggle('act',k===i));
+      if(scroll&&items[i])items[i].scrollIntoView({block:'nearest'});
+    };
+    const pick=i=>{
+      const v=opts[i].value,changed=valDesc.get.call(sel)!==v;
+      lastPick=Date.now();
+      closeDd();
+      btn.focus();
+      if(changed){
+        sel.value=v;
+        sel.dispatchEvent(new Event('input',{bubbles:true}));
+        sel.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+    };
+    items.forEach((e,i)=>{
+      e.addEventListener('mousemove',()=>{if(act!==i)setAct(i,false)});
+      e.addEventListener('click',()=>pick(i));
+    });
+    list.addEventListener('pointerdown',e=>e.preventDefault());
+    setAct(act,true);
+    cur={sel,wrap,btn,list,items,pick,setAct,get act(){return act},opts};
+  }
+  function enhance(sel){
+    if(sel.dataset.dd)return;
+    sel.dataset.dd='1';
+    const wrap=document.createElement('div');
+    wrap.className='dd';
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='ddb';
+    btn.setAttribute('aria-haspopup','listbox');
+    btn.setAttribute('aria-expanded','false');
+    btn.innerHTML='<span class="ddl"></span>'+CHEV;
+    sel.parentNode.insertBefore(wrap,sel);
+    wrap.appendChild(btn);
+    wrap.appendChild(sel);
+    sel.classList.add('ddn');
+    sel.tabIndex=-1;
+    sel.setAttribute('aria-hidden','true');
+    const sync=()=>{const o=sel.options[sel.selectedIndex];btn.firstChild.textContent=o?o.textContent:''};
+    Object.defineProperty(sel,'value',{get(){return valDesc.get.call(sel)},set(v){valDesc.set.call(sel,v);sync()},configurable:true});
+    new MutationObserver(sync).observe(sel,{childList:true,subtree:true,characterData:true});
+    sync();
+    btn.addEventListener('click',()=>{if(Date.now()-lastPick<250)return;openDd(sel,wrap,btn)});
+    btn.addEventListener('keydown',e=>{
+      if(!cur&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();openDd(sel,wrap,btn)}
+    });
+  }
+  const scan=()=>document.querySelectorAll('select:not([data-dd])').forEach(enhance);
+  let queued=false;
+  new MutationObserver(()=>{
+    if(cur&&!document.contains(cur.wrap))closeDd();
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;scan()});
+  }).observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('pointerdown',e=>{
+    if(cur&&!cur.list.contains(e.target)&&!cur.wrap.contains(e.target))closeDd();
+  },true);
+  document.addEventListener('keydown',e=>{
+    if(!cur)return;
+    const n=cur.items.length;
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();const b=cur.btn;closeDd();b.focus()}
+    else if(e.key==='ArrowDown'){e.preventDefault();cur.setAct((cur.act+1)%n,true)}
+    else if(e.key==='ArrowUp'){e.preventDefault();cur.setAct((cur.act-1+n)%n,true)}
+    else if(e.key==='Home'){e.preventDefault();cur.setAct(0,true)}
+    else if(e.key==='End'){e.preventDefault();cur.setAct(n-1,true)}
+    else if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();cur.pick(cur.act)}
+    else if(e.key==='Tab')closeDd();
+  },true);
+  window.addEventListener('scroll',e=>{if(cur&&!cur.list.contains(e.target))closeDd()},true);
+  window.addEventListener('resize',closeDd);
+  scan();
+})();
 </script>
 </body>
 </html>
