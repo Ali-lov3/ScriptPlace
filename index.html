@@ -15,6 +15,42 @@ window.SCRIPTPLACE_CONFIG={
   SUPABASE_ANON_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZXBmaXRneW5naHpxd25xbmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0OTc2MTMsImV4cCI6MjA5OTA3MzYxM30.uMAHZYntPzCGOvlU8jH0WHydox4o4pIrkH9wJFlhUco'
 };
 </script>
+<style>
+.fwarea{margin-top:12px}
+.fwarea:empty{display:none}
+.fwb{min-width:108px;justify-content:center}
+.fwb.on{color:var(--mut)}
+.fwb.on:hover{border-color:var(--bad);color:var(--bad)}
+.fwb:disabled{opacity:.6;cursor:default}
+.fa .fwarea{margin-top:10px}
+.fa .fwarea .fwb{min-width:0;width:auto;padding:6px 16px;font-size:13px;border-radius:999px}
+.pstats .fst{cursor:pointer;transition:background .12s}
+.pstats .fst:hover{background:var(--s2)}
+.pstats .fst:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.md.flwm{width:min(440px,100%);max-height:80vh;padding:0;text-align:left;display:flex;flex-direction:column;overflow:hidden}
+.flwm .flwh{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 16px 14px 20px;border-bottom:1px solid var(--line)}
+.flwm .flwh h3{margin:0;font-size:17px;line-height:1.2;text-align:left}
+.flwm .flwh small{display:block;margin-top:2px;color:var(--mut);font-size:12.5px}
+.flwm .flwh .ib{flex:0 0 auto;margin:0}
+.flwb{overflow-y:auto;padding:6px 8px 10px;display:grid;gap:2px;align-content:start}
+.flwr{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px}
+.flwr:hover{background:var(--s2)}
+.flwa{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:var(--text);text-decoration:none}
+.flwa .avw,.flwa .av{flex:0 0 auto}
+.flwn{display:flex;align-items:center;gap:6px;min-width:0}
+.flwn .ctag{display:none}
+.flwt{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flwr .fwb{min-width:0;padding:7px 14px;font-size:13px;flex:0 0 auto;border-radius:999px}
+.flwe{padding:32px 12px;text-align:center;color:var(--mut);font-size:14px}
+.nic.follow{color:var(--pink)}
+@media(max-width:640px){
+  .mo:has(.flwm){place-items:end center;padding:0}
+  .md.flwm{width:100%;max-height:78vh;border-radius:18px 18px 0 0;border-bottom:0}
+  .pstats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .pstats>div{grid-column:span 2}
+  .pstats>.fst{grid-column:span 3;order:-1}
+}
+</style>
 </head>
 <body>
 <header class="top">
@@ -440,7 +476,7 @@ const Follow={
     return ids.map(i=>({id:i,p:pm[i]||{},username:(pm[i]&&pm[i].username)||NAMES[i]||''}));
   }
 };
-const fwInner=on=>on?'<span class="t1">Following</span><span class="t2">Unfollow</span>':'Follow';
+const fwInner=on=>on?'Following':'Follow';
 const fwBtn=(id,on)=>`<button type="button" class="btn fwb${on?' sec on':''}" data-fw="${esc(id)}">${fwInner(on)}</button>`;
 function fwPaint(b,on){b.className='btn fwb'+(on?' sec on':'');b.innerHTML=fwInner(on)}
 async function fwToggle(b,id){
