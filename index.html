@@ -51,6 +51,20 @@ window.SCRIPTPLACE_CONFIG={
   .pstats>.fst{grid-column:span 3;order:-1}
 }
 </style>
+<style id="fx-css">
+.avbtn .cam{right:-9px;bottom:-9px;width:30px;height:30px;z-index:3;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.avbtn .cam svg{width:14px;height:14px}
+.aved{gap:22px}
+.fr-aurora{--fb:conic-gradient(#34d399,#22d3ee,#818cf8,#c084fc,#f0abfc,#34d399);--gl:rgba(52,211,153,.7);--gl2:rgba(129,140,248,.4);--sd:4.5s;--pd:3s}
+.fr-aurora::before{animation:frSpin var(--sd) linear infinite,frHue 9s linear infinite}
+.fr-matrix{--fb:repeating-conic-gradient(#00ff66 0 10deg,#03150a 0 22deg);--gl:rgba(0,255,102,.75);--gl2:rgba(0,120,50,.45);--sd:2.8s;--pd:1.6s}
+.fr-celestial{--fb:conic-gradient(#ffffff,#fde68a,#93c5fd,#ffffff,#fcd34d,#bfdbfe,#ffffff);--gl:rgba(253,230,138,.85);--gl2:rgba(147,197,253,.45);--sp:#fff;--sd:5s;--pd:2.6s}
+.fr-celestial::after{display:block;background:radial-gradient(circle at 50% calc(var(--pw)*.5),#fff 0,#fde68a calc(var(--s)*.045),transparent calc(var(--s)*.1)),radial-gradient(circle at 50% calc(100% - var(--pw)*.5),#bfdbfe 0,transparent calc(var(--s)*.07));animation:frSpin calc(var(--sd)*.6) linear infinite}
+.fr-phoenix{--fb:conic-gradient(#7c0a02,#ff3d00,#ffb300,#fff3b0,#ff3d8b,#ff3d00,#7c0a02);--gl:rgba(255,90,20,.95);--gl2:rgba(255,40,120,.5);--sd:2.4s;--pd:1.2s;animation-name:frFlicker}
+.fr-phoenix::after{display:block;background:radial-gradient(circle at 50% calc(var(--pw)*.5),#fff7c2 0,#ffb300 calc(var(--s)*.05),transparent calc(var(--s)*.11)),radial-gradient(circle at 50% calc(100% - var(--pw)*.5),#ff8ab9 0,transparent calc(var(--s)*.08));animation:frSpin calc(var(--sd)*.7) linear infinite reverse}
+.fr-abyss{--fb:conic-gradient(#020617,#0e7490,#22d3ee,#0c4a6e,#020617,#14b8a6,#020617);--gl:rgba(34,211,238,.8);--gl2:rgba(14,116,144,.6);--sd:7s;--pd:3.8s}
+.fr-abyss::after{display:block;inset:calc(var(--s)*-.04);background:radial-gradient(circle at 18% 26%,#a5f3fc 0 calc(var(--s)*.02),transparent calc(var(--s)*.045)),radial-gradient(circle at 84% 34%,#67e8f9 0 calc(var(--s)*.016),transparent calc(var(--s)*.04)),radial-gradient(circle at 66% 90%,#cffafe 0 calc(var(--s)*.02),transparent calc(var(--s)*.045)),radial-gradient(circle at 30% 88%,#5eead4 0 calc(var(--s)*.014),transparent calc(var(--s)*.036));animation:frSpin calc(var(--sd)*1.6) linear infinite reverse,frTwinkle 2.2s ease-in-out infinite alternate}
+</style>
 </head>
 <body>
 <header class="top">
@@ -112,7 +126,7 @@ const TIMEOUT_OPTS=[[10,'10 minutes'],[60,'1 hour'],[1440,'1 day'],[10080,'7 day
 const UB={},NAMES={},NICKS={};
 const dn=(id,fb)=>(id&&NICKS[id])||fb||'';
 const NICK_RE=/^[\p{L}\p{N} _.\-]{2,24}$/u;
-const FRAMES=[['green','Emerald','r'],['blue','Sapphire','r'],['violet','Amethyst','r'],['sakura','Sakura','r'],['gold','Gold','e'],['pink','Hot Pink','e'],['ice','Frostbite','e'],['sunset','Sunset','e'],['toxic','Toxic','e'],['neon','Neon','e'],['blood','Blood Moon','e'],['rainbow','Rainbow','e'],['fire','Inferno','l'],['plasma','Plasma','l'],['electric','Storm','l'],['galaxy','Galaxy','l'],['void','Void','l'],['glitch','Glitch','l'],['diamond','Diamond','l'],['royal','Royal','l']];
+const FRAMES=[['green','Emerald','r'],['blue','Sapphire','r'],['violet','Amethyst','r'],['sakura','Sakura','r'],['gold','Gold','e'],['pink','Hot Pink','e'],['ice','Frostbite','e'],['sunset','Sunset','e'],['toxic','Toxic','e'],['neon','Neon','e'],['blood','Blood Moon','e'],['rainbow','Rainbow','e'],['fire','Inferno','l'],['plasma','Plasma','l'],['electric','Storm','l'],['galaxy','Galaxy','l'],['void','Void','l'],['glitch','Glitch','l'],['diamond','Diamond','l'],['royal','Royal','l'],['aurora','Aurora','e'],['matrix','Matrix','e'],['celestial','Celestial','l'],['phoenix','Phoenix','l'],['abyss','Abyss','l']];
 const NFONTS=[['','Default',"'Inter',sans-serif",600],['pacifico','Pacifico',"'Pacifico',cursive",400],['lobster','Lobster',"'Lobster',cursive",400],['caveat','Caveat',"'Caveat',cursive",700],['marker','Permanent Marker',"'Permanent Marker',cursive",400],['bebas','Bebas Neue',"'Bebas Neue',sans-serif",400],['righteous','Righteous',"'Righteous',sans-serif",400],['audiowide','Audiowide',"'Audiowide',sans-serif",400],['orbitron','Orbitron',"'Orbitron',sans-serif",700],['pressstart','Press Start 2P',"'Press Start 2P',monospace",400],['mono','JetBrains Mono',"'JetBrains Mono',monospace",700],['playfair','Playfair Display',"'Playfair Display',serif",700],['cinzel','Cinzel',"'Cinzel',serif",700],['creepster','Creepster',"'Creepster',cursive",400]];
 const NFONT={};
 function nameHTML(id,fb){
