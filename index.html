@@ -97,6 +97,7 @@ window.SCRIPTPLACE_CONFIG={
   <nav class="menu hidden" id="menu">
     <a class="mhead" href="#account" id="mHead"></a>
     <a class="mi" href="#home" data-p="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+    <a class="mi" href="#trends" data-p="trends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>Trends</a>
     <a class="mi" href="#mine" data-p="mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>My scripts</a>
     <a class="mi" href="#account" data-p="account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><span id="navAcc">Login</span></a>
     <a class="mi hidden" href="#admin" data-p="admin" id="mAdmin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6z"/></svg>Admin</a>
@@ -266,6 +267,19 @@ const DB={
     if(hasF)a=a.filter(match);
     a=[...a].sort((x,y)=>sort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at));
     return{items:a.slice(page*PAGE,page*PAGE+PAGE),more:a.length>page*PAGE+PAGE};
+  },
+  async logSearch(raw){
+    const t=String(raw||'').toLowerCase().replace(/\s+/g,' ').trim();
+    if(t.length<2||t.length>40)return;
+    const seen=LS.get('spl_sq',{}),now=Date.now();
+    if(seen[t]&&now-seen[t]<6e5)return;
+    seen[t]=now;Object.keys(seen).forEach(k=>{if(now-seen[k]>36e5)delete seen[k]});LS.set('spl_sq',seen);
+    if(REMOTE){try{await rq('/rest/v1/rpc/log_search',{method:'POST',body:{t}})}catch(e){}return}
+    const m=LS.get('spl_terms',{});m[t]=(m[t]||0)+1;LS.set('spl_terms',m);
+  },
+  async trends(){
+    if(REMOTE){const r=await rq('/rest/v1/rpc/popular_searches',{method:'POST',body:{lim:80}});return r.map(x=>({term:x.term,n:Number(x.n)||0}))}
+    const m=LS.get('spl_terms',{});return Object.keys(m).map(k=>({term:k,n:m[k]})).sort((a,b)=>b.n-a.n).slice(0,80);
   },
   async stats(){
     const rows=REMOTE?await rq('/rest/v1/scripts?select=views,game_name,icon,key_system,paid&limit=1000'):LS.get('spl_scripts',[]);
@@ -1035,7 +1049,7 @@ function route(){
   document.querySelectorAll('#menu a').forEach(a=>a.classList.toggle('on',a.dataset.p===p&&!a.classList.contains('pub')));
   const s=getSess();$('navAcc').textContent=s?'Profile':'Login';headerSync();
   closeMenu();closeNotif();nLoad();
-  ({home:pageHome,publish:pagePublish,mine:pageMine,account:pageAccount,admin:pageAdmin,user:()=>pageUser(arg),script:()=>pageScript(arg)}[p]||pageHome)();
+  ({home:pageHome,trends:pageTrends,publish:pagePublish,mine:pageMine,account:pageAccount,admin:pageAdmin,user:()=>pageUser(arg),script:()=>pageScript(arg)}[p]||pageHome)();
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange',route);
@@ -1108,7 +1122,7 @@ function pageHome(){
   const drop=$('sDrop');
   let sSeq=0,sTimer=null;
   const hideDrop=()=>{sSeq++;clearTimeout(sTimer);drop.classList.add('hidden')};
-  const applyQ=v=>{home.q=v;$('hQ').value=v;hideDrop();syncGames();homeLoad(true)};
+  const applyQ=v=>{home.q=v;$('hQ').value=v;hideDrop();syncGames();homeLoad(true);DB.logSearch(v)};
   const bindDrop=()=>{
     drop.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>applyQ(b.dataset.q));
     drop.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{hideDrop();go('script/'+b.dataset.s)});
@@ -1146,7 +1160,7 @@ function pageHome(){
     if(!v){showExamples();return}
     sTimer=setTimeout(()=>suggest(v),200);
   });
-  const run=()=>{hideDrop();home.q=$('hQ').value.trim();syncGames();homeLoad(true)};
+  const run=()=>{hideDrop();home.q=$('hQ').value.trim();syncGames();homeLoad(true);DB.logSearch(home.q)};
   $('hGo').onclick=run;$('hQ').addEventListener('keydown',e=>{if(e.key==='Enter')run()});
   $('fsBtn').onclick=()=>{const o=$('fp').classList.toggle('hidden');$('fsBtn').classList.toggle('open',!o);$('fsBtn').setAttribute('aria-expanded',String(!o))};
   document.querySelectorAll('#sSort button').forEach(b=>b.onclick=()=>{home.sort=b.dataset.v;syncFilters();homeLoad(true)});
@@ -1165,6 +1179,22 @@ function pageHome(){
     renderGameChips();
   }).catch(()=>{});
   homeLoad(true);
+}
+const CLOUD_COLORS=['#ff3d8b','#3ecf8e','#3b9cff','#f5b84b','#a855f7','#22d3ee','#f0506a','#84cc16'];
+async function pageTrends(){
+  $('app').innerHTML=`<div class="rowh big"><h1>Popular searches</h1></div><p class="intro">What people look for on ScriptPlace right now. Bigger words are searched more often. Publish a script for one of them.</p><div id="tBox"><div class="sk" style="height:260px"></div></div>`;
+  try{
+    const rows=await DB.trends(),box=$('tBox');if(!box)return;
+    if(!rows.length){box.innerHTML='<div class="card empty"><h3>No searches yet</h3>Search terms show up here as soon as people use the search on the home page.<div class="actions" style="justify-content:center"><a class="btn" href="#home">Go to search</a></div></div>';return}
+    const max=Math.max(...rows.map(r=>r.n)),min=Math.min(...rows.map(r=>r.n));
+    const w=n=>max===min?.5:(Math.log(n)-Math.log(min))/(Math.log(max)-Math.log(min));
+    const sorted=[...rows].sort((a,b)=>b.n-a.n),mid=[];
+    sorted.forEach((r,i)=>{i%2?mid.push(r):mid.unshift(r)});
+    box.innerHTML=`<div class="cloud card">${mid.map((r,i)=>{
+      const k=w(r.n),sz=Math.round(14+k*38),wt=k>.6?700:k>.3?600:500;
+      return `<button type="button" class="cw" data-t="${esc(r.term)}" style="font-size:${sz}px;font-weight:${wt};color:${CLOUD_COLORS[(i*3+r.term.length)%CLOUD_COLORS.length]}" title="${esc(fmt(r.n))} searches">${esc(r.term)}</button>`}).join('')}</div>`;
+    box.querySelectorAll('.cw').forEach(b=>b.onclick=()=>{home.q=b.dataset.t;location.hash='#home'});
+  }catch(e){const b=$('tBox');if(b)b.innerHTML=`<div class="card"><p class="err">Could not load searches: ${esc(e.message)}</p></div>`}
 }
 function syncGames(){document.querySelectorAll('#gChips .g').forEach(c=>c.classList.toggle('on',!!home.q&&c.dataset.g===home.q))}
 function renderGameChips(){

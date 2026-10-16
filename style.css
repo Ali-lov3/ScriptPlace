@@ -615,3 +615,10 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:32px 20px;borde
 
 .fa .fwarea{margin-top:8px}
 .fa .fwb{min-width:0;padding:5px 14px;font-size:12.5px}
+
+.cloud{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 18px;padding:28px 18px;line-height:1.15}
+.cw{background:none;border:0;padding:2px 4px;font-family:inherit;letter-spacing:-.02em;cursor:pointer;border-radius:6px;transition:opacity .12s,transform .12s}
+.cw:hover{opacity:.75;transform:scale(1.06)}
+.cw:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+@media(max-width:560px){.cloud{gap:0 12px;padding:20px 10px}}
+@media(prefers-reduced-motion:reduce){.cw{transition:none}.cw:hover{transform:none}}
