@@ -172,7 +172,9 @@ const Auth={
 };
 
 const DB={
-  async list({q='',sort='new',page=0,key='all',features=[],executor=''}){
+  async list({q='',sort='new',page=0,key='all',features=[],executor='',from='all'}){
+    let fids=null;
+    if(from==='following'){fids=await Follow.ids();if(!fids.length)return{items:[],more:false}}
     const hasF=features.length>0||!!executor;
     const match=x=>features.every(f=>(x.features||[]).includes(f))&&(!executor||(x.executors||[]).includes(executor));
     const keyOk=x=>key==='all'||(key==='no'&&!x.key_system&&!x.paid)||(key==='yes'&&!!x.key_system)||(key==='paid'&&!!x.paid);
@@ -184,6 +186,7 @@ const DB={
       if(key==='no')p+='&key_system=eq.false&paid=eq.false';
       if(key==='yes')p+='&key_system=eq.true';
       if(key==='paid')p+='&paid=eq.true';
+      if(fids)p+=`&user_id=in.(${fids.map(encodeURIComponent).join(',')})`;
       let rows=await rq(p);
       if(hasF){rows=rows.filter(match);return{items:rows.slice(page*PAGE,page*PAGE+PAGE),more:rows.length>page*PAGE+PAGE}}
       return{items:rows.slice(0,PAGE),more:rows.length>PAGE};
@@ -191,6 +194,7 @@ const DB={
     let a=LS.get('spl_scripts',[]);const c=q.toLowerCase().trim();
     if(c)a=a.filter(x=>(x.title+' '+(x.game_name||'')).toLowerCase().includes(c));
     a=a.filter(keyOk);
+    if(fids)a=a.filter(x=>fids.includes(x.user_id));
     if(hasF)a=a.filter(match);
     a=[...a].sort((x,y)=>sort==='top'?(y.views||0)-(x.views||0):new Date(y.created_at)-new Date(x.created_at));
     return{items:a.slice(page*PAGE,page*PAGE+PAGE),more:a.length>page*PAGE+PAGE};
@@ -292,6 +296,9 @@ const DB={
     else vn=LS.get('spl_vnotices',[]).filter(x=>x.user_id===s.id);
     let vr=[];
     if(s.id===OWNER_ID&&REMOTE){try{vr=await rq('/rest/v1/verify_requests?status=eq.pending&select=user_id,author,created_at&order=created_at.desc&limit=30')}catch(e){}}
+    let fw=[];
+    if(REMOTE){try{fw=await rq(`/rest/v1/follows?following_id=eq.${encodeURIComponent(s.id)}&select=follower_id,author,created_at&order=created_at.desc&limit=30`)}catch(e){}}
+    else fw=LS.get('spl_follows',[]).filter(x=>x.following_id===s.id);
     let rp=[];
     if(s.id===OWNER_ID){try{rp=await Report.open()}catch(e){}}
     const rm=[...new Set(rp.map(r=>r.script_id))].filter(i=>!(i in titles));
@@ -306,6 +313,7 @@ const DB={
       ...likes.map(l=>({type:'like',script_id:l.script_id,user_id:l.user_id,author:l.author||'Someone',created_at:l.created_at,title:titles[l.script_id]})),
       ...coms.filter(c=>!repIds.has(c.id)).map(c=>({type:'comment',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
       ...reps.map(c=>({type:'reply',script_id:c.script_id,user_id:c.user_id,author:c.author,body:c.body,created_at:c.created_at,title:titles[c.script_id]})),
+      ...fw.map(f=>({type:'follow',script_id:'',user_id:f.follower_id,author:f.author||'Someone',created_at:f.created_at,title:''})),
       ...vr.map(v=>({type:'verify',script_id:'',user_id:v.user_id,author:v.author,created_at:v.created_at,title:''})),
       ...rp.map(r=>({type:'report',script_id:r.script_id,user_id:r.reporter_id,author:r.reporter,body:r.reason+(r.details?': '+r.details:''),created_at:r.created_at,title:titles[r.script_id]})),
       ...vm.map(m=>({type:m.kind,script_id:'',user_id:s.id,author:'Owner',body:m.body||'',until:m.until,created_at:m.created_at,title:''})),
@@ -373,6 +381,125 @@ const Badges={
     if(verified){await Verify.clear(id);if(!was){try{await Verify.notify(id,'approved')}catch(e){}}}
   }
 };
+const ICON_USERS=svgI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.7c2 .6 3.3 2.3 3.7 5.3"/>');
+const ICON_USERPLUS=svgI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3-5.5 6.5-5.5s5.9 1.9 6.5 5.5M19 8v6M16 11h6"/>');
+const Follow={
+  async counts(id){
+    const z={followers:0,following:0};
+    if(REMOTE){
+      if(!isUUID(id))return z;
+      try{const r=await rq('/rest/v1/rpc/follow_counts',{method:'POST',body:{uid:id}});return{followers:Number(r.followers)||0,following:Number(r.following)||0}}catch(e){return z}
+    }
+    const a=LS.get('spl_follows',[]);
+    return{followers:a.filter(x=>x.following_id===id).length,following:a.filter(x=>x.follower_id===id).length};
+  },
+  async ids(){
+    const s=getSess();if(!s)return[];
+    if(REMOTE){const r=await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(s.id)}&select=following_id&limit=1000`);return r.map(x=>x.following_id)}
+    return LS.get('spl_follows',[]).filter(x=>x.follower_id===s.id).map(x=>x.following_id);
+  },
+  async is(id){
+    const s=getSess();if(!s||s.id===id)return false;
+    if(REMOTE){
+      if(!isUUID(id))return false;
+      const r=await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(s.id)}&following_id=eq.${encodeURIComponent(id)}&select=following_id`);
+      return r.length>0;
+    }
+    return LS.get('spl_follows',[]).some(x=>x.follower_id===s.id&&x.following_id===id);
+  },
+  async add(id){
+    const s=getSess();
+    if(!s)throw new Error('Log in to follow people');
+    if(s.id===id)throw new Error('You cannot follow yourself');
+    if(REMOTE){
+      if(!isUUID(id))throw new Error('User not found');
+      try{await rq('/rest/v1/follows',{method:'POST',body:{follower_id:s.id,following_id:id,author:s.username},headers:{Prefer:'return=minimal'}})}
+      catch(e){if(!/duplicate|already exists/i.test(e.message))throw e}
+      return;
+    }
+    const a=LS.get('spl_follows',[]);
+    if(!a.some(x=>x.follower_id===s.id&&x.following_id===id))a.push({follower_id:s.id,following_id:id,author:s.username,created_at:new Date().toISOString()});
+    LS.set('spl_follows',a);
+  },
+  async remove(id){
+    const s=getSess();if(!s)return;
+    if(REMOTE){await rq(`/rest/v1/follows?follower_id=eq.${encodeURIComponent(s.id)}&following_id=eq.${encodeURIComponent(id)}`,{method:'DELETE'});return}
+    LS.set('spl_follows',LS.get('spl_follows',[]).filter(x=>!(x.follower_id===s.id&&x.following_id===id)));
+  },
+  async list(id,kind){
+    const col=kind==='followers'?'follower_id':'following_id',by=kind==='followers'?'following_id':'follower_id';
+    let ids;
+    if(REMOTE){
+      if(!isUUID(id))return[];
+      const r=await rq(`/rest/v1/follows?${by}=eq.${encodeURIComponent(id)}&select=${col}&order=created_at.desc&limit=40`);
+      ids=r.map(x=>x[col]);
+    }else ids=LS.get('spl_follows',[]).filter(x=>x[by]===id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,40).map(x=>x[col]);
+    if(!ids.length)return[];
+    await Badges.ensure(ids);
+    const pm=await Prof.many(ids);
+    return ids.map(i=>({id:i,p:pm[i]||{},username:(pm[i]&&pm[i].username)||NAMES[i]||''}));
+  }
+};
+const fwInner=on=>on?'<span class="t1">Following</span><span class="t2">Unfollow</span>':'Follow';
+const fwBtn=(id,on)=>`<button type="button" class="btn fwb${on?' sec on':''}" data-fw="${esc(id)}">${fwInner(on)}</button>`;
+function fwPaint(b,on){b.className='btn fwb'+(on?' sec on':'');b.innerHTML=fwInner(on)}
+async function fwToggle(b,id){
+  if(!getSess()){toast('Log in to follow people',1);go('account');return null}
+  if(b.disabled)return null;
+  const was=b.classList.contains('on');b.disabled=true;
+  try{
+    if(was)await Follow.remove(id);else await Follow.add(id);
+    fwPaint(b,!was);b.disabled=false;return !was;
+  }catch(e){toast(e.message,1);b.disabled=false;return null}
+}
+const fwStats=()=>`<div class="fst" role="button" tabindex="0" data-fl="followers"><i class="si">${ICON_USERS}</i><b id="fcFollowers" data-n="0">-</b><span>Followers</span></div><div class="fst" role="button" tabindex="0" data-fl="following"><i class="si">${ICON_USERPLUS}</i><b id="fcFollowing" data-n="0">-</b><span>Following</span></div>`;
+async function paintFollowCounts(id,name){
+  const c=await Follow.counts(id),a=$('fcFollowers'),b=$('fcFollowing');
+  if(a){a.dataset.n=String(c.followers);a.textContent=fmt(c.followers)}
+  if(b){b.dataset.n=String(c.following);b.textContent=fmt(c.following)}
+  document.querySelectorAll('.pstats [data-fl]').forEach(el=>{
+    const open=()=>openFollowList(id,el.dataset.fl,name);
+    el.onclick=open;
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}};
+  });
+}
+async function initFollow(id,name){
+  const box=$('fwArea');if(!box)return;
+  const on=getSess()?await Follow.is(id).catch(()=>false):false;
+  if(!$('fwArea'))return;
+  box.innerHTML=fwBtn(id,on);
+  const b=box.querySelector('button');
+  b.onclick=async()=>{
+    const r=await fwToggle(b,id);if(r===null)return;
+    const c=$('fcFollowers');
+    if(c){const n=Math.max(0,Number(c.dataset.n||0)+(r?1:-1));c.dataset.n=String(n);c.textContent=fmt(n)}
+    toast(r?'You are now following '+name:'Unfollowed '+name);
+  };
+}
+async function openFollowList(id,kind,name){
+  const title=kind==='followers'?'Followers':'Following';
+  const o=document.createElement('div');o.className='mo';
+  o.innerHTML=`<div class="md flwm" role="dialog" aria-modal="true" aria-label="${title}"><div class="flwh"><div><h3>${title}</h3><small>${esc(name)}</small></div><button type="button" class="ib" data-x aria-label="Close">${ICON_X}</button></div><div class="flwb"><div class="sk" style="height:56px"></div></div></div>`;
+  let changed=false;
+  const key=e=>{if(e.key==='Escape')done()};
+  const done=()=>{document.removeEventListener('keydown',key);o.remove();if(changed)paintFollowCounts(id,name)};
+  o.onclick=e=>{if(e.target===o)done()};
+  o.querySelector('[data-x]').onclick=done;
+  document.addEventListener('keydown',key);
+  document.body.appendChild(o);
+  const body=o.querySelector('.flwb'),me=getSess()&&getSess().id;
+  try{
+    const [rows,mine]=await Promise.all([Follow.list(id,kind),me?Follow.ids().catch(()=>[]):[]]);
+    const set=new Set(mine);
+    if(!rows.length){body.innerHTML=`<div class="flwe">${kind==='followers'?'No followers yet.':'Not following anyone yet.'}</div>`;return}
+    body.innerHTML=rows.map(r=>{
+      const nm=dn(r.id,r.username||'User');
+      return `<div class="flwr"><a class="flwa" href="#user/${encodeURIComponent(r.id)}">${avatarHTML({...r.p,id:r.id},nm,40)}<span class="flwn"><span class="flwt">${nameHTML(r.id,r.username||'User')}</span>${ownerTag(r.id)}</span></a>${me&&me!==r.id?fwBtn(r.id,set.has(r.id)):''}</div>`;
+    }).join('');
+    body.querySelectorAll('a').forEach(a=>a.onclick=done);
+    body.querySelectorAll('[data-fw]').forEach(b=>b.onclick=async()=>{const r=await fwToggle(b,b.dataset.fw);if(r!==null)changed=true});
+  }catch(e){body.innerHTML=`<div class="flwe err">${esc(e.message)}</div>`}
+}
 const Report={
   async send(scriptId,reason,details){
     const s=getSess(),d=String(details||'').trim().slice(0,500);
@@ -602,12 +729,13 @@ const nKey=()=>{const s=getSess();return s?'spl_nread_'+s.id:''};
 function nUnread(){const k=nKey();if(!k)return 0;const t=LS.get(k,0);return notifs.filter(n=>new Date(n.created_at).getTime()>t).length}
 function nBadge(){const b=$('bDot'),n=nUnread();b.textContent=n>9?'9+':String(n);b.classList.toggle('hidden',!n)}
 function closeNotif(){$('nPanel').classList.add('hidden');$('tBell').classList.remove('open')}
-const NOTIF_USER=['like','comment','reply','verify','report'];
+const NOTIF_USER=['like','comment','reply','verify','report','follow'];
 const nName=n=>NOTIF_USER.includes(n.type)?dn(n.user_id,n.author):n.author;
 const N_VERB={like:'liked',comment:'commented on',reply:'replied to you on'};
-const N_ICON={like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY,report:ICON_FLAG,message:ICON_MAIL,timeout:ICON_CLOCK,untimeout:ICON_CLOCK};
-const nHref=n=>n.type==='verify'?'#user/'+encodeURIComponent(n.user_id):['verify_ok','verify_no','message','timeout','untimeout'].includes(n.type)?'#account':'#script/'+encodeURIComponent(n.script_id);
+const N_ICON={follow:ICON_USERS,like:ICON_HEART,comment:ICON_CHAT,reply:ICON_CHAT,verify:ICON_VERIFIED,verify_ok:ICON_VERIFIED,verify_no:ICON_DENY,report:ICON_FLAG,message:ICON_MAIL,timeout:ICON_CLOCK,untimeout:ICON_CLOCK};
+const nHref=n=>['verify','follow'].includes(n.type)?'#user/'+encodeURIComponent(n.user_id):['verify_ok','verify_no','message','timeout','untimeout'].includes(n.type)?'#account':'#script/'+encodeURIComponent(n.script_id);
 function nText(n){
+  if(n.type==='follow')return `<b>${esc(nName(n))}</b> started following you`;
   if(n.type==='verify')return `<b>${esc(nName(n))}</b> requested a verify badge`;
   if(n.type==='report')return `<b>${esc(nName(n))}</b> reported <b>${esc(n.title||'a script')}</b>`;
   if(n.type==='message')return '<b>Owner</b> sent you a message';
@@ -844,7 +972,7 @@ function route(){
 }
 window.addEventListener('hashchange',route);
 
-const home={q:'',sort:'new',key:'all',features:[],executor:'',page:0,items:[],more:false,busy:false,top:[]};
+const home={q:'',sort:'new',key:'all',from:'all',features:[],executor:'',page:0,items:[],more:false,busy:false,top:[]};
 const ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 const accessLabel=it=>it.paid?'Paid':it.key_system?'Key system':'Keyless';
 const accessBadge=it=>it.paid?'<span class="badge p">Paid</span>':it.key_system?'<span class="badge k">Key system</span>':'<span class="badge f">Keyless</span>';
@@ -855,11 +983,12 @@ function cardHTML(it,link=true){
   const au=link&&it.user_id?`<span class="ul" data-u="${esc(it.user_id)}">${nameHTML(it.user_id,it.author||'you')}</span>`:esc(an);
   return `<${tag} class="sc"${href}><div class="th" style="${img?`background-image:url('${esc(img)}')`:''}"><span class="vw">${ICON_EYE}${fmt(it.views)}</span><span class="ago">${esc(timeAgo(it.created_at))}</span></div><div class="bd"><span class="gn">${esc(it.game_name||'Universal')}</span><b>${esc(it.title||'Untitled script')}</b><span class="by">by ${au}${ownerTag(it.user_id)}</span><div class="tags">${accessBadge(it)}${(it.executors||[]).slice(0,2).map(x=>`<span class="badge x">${esc(x)}</span>`).join('')}${(it.executors||[]).length>2?`<span class="badge x">+${it.executors.length-2}</span>`:''}${(it.features||[]).slice(0,2).map(f=>`<span class="badge">${esc(f)}</span>`).join('')}</div></div></${tag}>`;
 }
-const fcount=()=>(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
+const fcount=()=>(home.from!=='all'?1:0)+(home.key!=='all'?1:0)+(home.sort!=='new'?1:0)+(home.executor?1:0)+home.features.length;
 function syncFilters(){
   if(!$('fp'))return;
   document.querySelectorAll('#sSort button').forEach(b=>b.classList.toggle('on',b.dataset.v===home.sort));
   document.querySelectorAll('#sKey button').forEach(b=>b.classList.toggle('on',b.dataset.v===home.key));
+  document.querySelectorAll('#sFrom button').forEach(b=>b.classList.toggle('on',b.dataset.v===home.from));
   const ff=$('fFeat');ff.innerHTML='';
   PRESETS.forEach(f=>{
     const c=document.createElement('button');c.type='button';c.className='chip'+(home.features.includes(f)?' on':'');c.textContent=f;
@@ -874,6 +1003,7 @@ function syncFilters(){
   });
   const n=fcount(),cb=$('fcount');cb.textContent=n;cb.classList.toggle('hidden',!n);
   const act=[];
+  if(home.from==='following')act.push(['from','Following']);
   if(home.sort==='top')act.push(['sort','Most viewed']);
   if(home.key==='no')act.push(['key','Keyless']);
   if(home.key==='yes')act.push(['key','Key system']);
@@ -883,7 +1013,7 @@ function syncFilters(){
   $('active').innerHTML=act.map(([k,l])=>`<button type="button" class="chip on rm" data-k="${esc(k)}">${esc(l)}${ICON_X}</button>`).join('');
   $('active').querySelectorAll('.rm').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k;
-    if(k==='sort')home.sort='new';else if(k==='key')home.key='all';else if(k==='exec')home.executor='';else home.features=home.features.filter(x=>'f:'+x!==k);
+    if(k==='sort')home.sort='new';else if(k==='from')home.from='all';else if(k==='key')home.key='all';else if(k==='exec')home.executor='';else home.features=home.features.filter(x=>'f:'+x!==k);
     syncFilters();homeLoad(true);
   });
 }
@@ -897,6 +1027,7 @@ function pageHome(){
   <p class="intro" id="intro">Open a script, copy its loadstring and run it in your executor.</p>
   <div class="fp hidden" id="fp">
     <div class="fgrp"><span class="fl">Sort by</span><div class="seg2" id="sSort"><button data-v="new">Newest</button><button data-v="top">Most viewed</button></div></div>
+    <div class="fgrp"><span class="fl">Show</span><div class="seg2" id="sFrom"><button data-v="all">Everyone</button><button data-v="following">Following</button></div></div>
     <div class="fgrp"><span class="fl">Key</span><div class="seg2" id="sKey"><button data-v="all">All</button><button data-v="no">Keyless</button><button data-v="yes">Key system</button><button data-v="paid">Paid</button></div></div>
     <div class="fgrp"><span class="fl">Tested on</span><div class="chips" id="fExec"></div></div>
     <div class="fgrp"><span class="fl">Features</span><div class="chips" id="fFeat"></div></div>
@@ -952,7 +1083,8 @@ function pageHome(){
   $('fsBtn').onclick=()=>{const o=$('fp').classList.toggle('hidden');$('fsBtn').classList.toggle('open',!o);$('fsBtn').setAttribute('aria-expanded',String(!o))};
   document.querySelectorAll('#sSort button').forEach(b=>b.onclick=()=>{home.sort=b.dataset.v;syncFilters();homeLoad(true)});
   document.querySelectorAll('#sKey button').forEach(b=>b.onclick=()=>{home.key=b.dataset.v;syncFilters();homeLoad(true)});
-  $('fReset').onclick=()=>{home.sort='new';home.key='all';home.executor='';home.features=[];syncFilters();homeLoad(true)};
+  document.querySelectorAll('#sFrom button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='following'&&!getSess()){toast('Log in to see scripts from people you follow',1);return}home.from=b.dataset.v;syncFilters();homeLoad(true)});
+  $('fReset').onclick=()=>{home.from='all';home.sort='new';home.key='all';home.executor='';home.features=[];syncFilters();homeLoad(true)};
   $('hAll').onclick=()=>{home.q='';$('hQ').value='';syncGames();homeLoad(true)};
   $('hMore').onclick=()=>{home.page++;homeLoad(false)};
   if(fcount()){$('fp').classList.remove('hidden');$('fsBtn').classList.add('open');$('fsBtn').setAttribute('aria-expanded','true')}
@@ -978,11 +1110,13 @@ async function homeLoad(reset){
   if(home.busy)return;home.busy=true;
   const grid=$('hGrid');if(!grid){home.busy=false;return}
   if(reset){home.page=0;home.items=[];grid.innerHTML='<div class="sk"></div>'.repeat(4)}
-  $('hTitle').textContent=home.q?`Results for "${home.q}"`:(home.sort==='top'?'Most viewed scripts':'Latest scripts');
+  $('hTitle').textContent=home.q?`Results for "${home.q}"`:(home.from==='following'?'From people you follow':(home.sort==='top'?'Most viewed scripts':'Latest scripts'));
   const st=$('hStatus');st.className='hint';st.textContent='';
   try{
     const r=await DB.list(home);await Badges.ensure(r.items.map(x=>x.user_id));home.items.push(...r.items);home.more=r.more;
     grid.innerHTML=home.items.length?home.items.map(it=>cardHTML(it)).join(''):`<div class="empty" style="grid-column:1/-1"><h3>${home.q||fcount()?'No scripts found':'No scripts yet'}</h3>${home.q||fcount()?'Try another keyword or reset the filters.':'Publish the first one.'}<div class="actions" style="justify-content:center">${fcount()?'<button class="btn sec" id="emptyReset">Reset filters</button>':'<a class="btn" href="#publish">Publish a script</a>'}</div></div>`;
+    if(!home.items.length&&home.from==='following')grid.innerHTML='<div class="empty" style="grid-column:1/-1"><h3>No scripts from people you follow</h3>Follow creators on their profile and their new scripts show up here.<div class="actions" style="justify-content:center"><button class="btn sec" id="emptyAll">Show everyone</button></div></div>';
+    const ea=$('emptyAll');if(ea)ea.onclick=()=>{home.from='all';syncFilters();homeLoad(true)};
     const er=$('emptyReset');if(er)er.onclick=()=>$('fReset').click();
     $('hMore').classList.toggle('hidden',!home.more);
   }catch(e){grid.innerHTML='';st.className='err';st.textContent='Could not load scripts: '+e.message}
@@ -1011,6 +1145,15 @@ async function pageScript(id){
     <div id="rpList"></div>
     <div id="related"></div>`;
     $('code').textContent=it.code;$('lines').textContent=it.code.split('\n').length+' lines, '+it.code.length.toLocaleString('en-US')+' characters';
+    if(!own){
+      const fa=document.querySelector('.fa');
+      if(fa){
+        const w=document.createElement('div');w.className='fwarea';w.innerHTML=fwBtn(it.user_id,false);fa.appendChild(w);
+        const b=w.querySelector('button');
+        if(getSess())Follow.is(it.user_id).then(on=>{if(b.isConnected)fwPaint(b,on)}).catch(()=>{});
+        b.onclick=async()=>{const r=await fwToggle(b,it.user_id);if(r!==null)toast(r?'You are now following '+dn(it.user_id,it.author):'Unfollowed '+dn(it.user_id,it.author))};
+      }
+    }
     Prof.load(it.user_id).then(p=>{const a=$('auth');if(a&&(p.avatar||p.color))a.innerHTML='<a class="ul who" href="#user/'+encodeURIComponent(it.user_id)+'">'+avatarHTML(p,dn(it.user_id,it.author),24)+'<span>'+nameHTML(it.user_id,it.author)+'</span></a>'+ownerTag(it.user_id)}).catch(()=>{});
     $('cpBtn').onclick=()=>copy(it.code,'Script copied');
     $('shBtn').onclick=()=>copy(location.href,'Link copied');
@@ -1398,11 +1541,11 @@ const Prof={
     if(REMOTE){
       const ok=ids.filter(isUUID);
       if(!ok.length)return out;
-      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,avatar_t,color,nickname,frame,name_font`);r.forEach(p=>{out[p.id]=p;NFONT[p.id]=p.name_font||'';if(p.nickname)NICKS[p.id]=p.nickname})}catch(e){}
+      try{const r=await rq(`/rest/v1/profiles?id=in.(${ok.map(encodeURIComponent).join(',')})&select=id,avatar,avatar_t,color,nickname,frame,name_font,username`);r.forEach(p=>{out[p.id]=p;NFONT[p.id]=p.name_font||'';if(p.nickname)NICKS[p.id]=p.nickname})}catch(e){}
       return out;
     }
     const all=LS.get('spl_users',{});
-    ids.forEach(id=>{const u=all[id];if(u)out[id]={id,avatar:u.avatar||'',avatar_t:u.avatar_t||'',color:u.color||''}});
+    ids.forEach(id=>{const u=all[id];if(u)out[id]={id,avatar:u.avatar||'',avatar_t:u.avatar_t||'',color:u.color||'',username:u.username||''}});
     return out;
   },
   async sync(){
@@ -1558,7 +1701,7 @@ function renderProfile(mine){
   $('app').innerHTML=`
   <section class="prof"><div class="pban" id="pBan"></div><div class="pbody"><div id="pAv"></div>
     <div class="pinfo"><h1>${nameHTML(s.id,s.username)}${ownerTag(s.id)}</h1><span class="hint" style="margin:0">${NICKS[s.id]?'@'+esc(s.username)+' · ':''}${esc(s.email)}</span><p class="pbio" id="pBio">${esc(p.bio||'')}</p>${plink?`<a class="plink" id="pLink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}<div id="vrArea"></div></div>
-    <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${mine.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div><div><i class="si">${ICON_CAL}</i><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
+    <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${mine.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div>${fwStats()}<div><i class="si">${ICON_CAL}</i><b>${esc(since)}</b><span>Member since</span></div></div></div></section>
   <div class="grid2 eq">
     <div class="card"><h2>Edit profile</h2>
       <div class="aved"><button type="button" class="avbtn" id="upBtn" aria-label="Change photo"><span id="eAv"></span><span class="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span></button>
@@ -1658,6 +1801,7 @@ function renderProfile(mine){
   document.querySelectorAll('#mSort button').forEach(b=>b.onclick=()=>{mSort=b.dataset.v;drawMine()});
   $('newBtn2').onclick=()=>{draft=fresh();saveDraft()};
   drawMine();
+  paintFollowCounts(s.id,dn(s.id,s.username));
   initVerify(s.id);
   $('logout').onclick=()=>{Auth.logout();toast('Logged out');route()};
   if($('cp'))$('cp').onclick=async()=>{
@@ -1711,9 +1855,10 @@ async function pageUser(id){
     const first=list.length?new Date(list[list.length-1].created_at).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'-';
     const admin=!!s&&s.id===OWNER_ID;
     $('app').innerHTML=`<section class="prof"><div class="pban" style="${bannerCSS(p,col)}">${bannerImg(p)}</div><div class="pbody"><div id="pAv">${avatarHTML(p,name,88)}</div>
-      <div class="pinfo"><h1>${nameHTML(id,uname)}${ownerTag(id)}</h1>${name!==uname?`<span class="hint" style="margin:0">@${esc(uname)}</span>`:''}<p class="pbio">${esc(p.bio||'')}</p>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="ufBtn">Frames</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
-      <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${list.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div><div><i class="si">${ICON_CAL}</i><b>${esc(first)}</b><span>First script</span></div></div></div></section>
+      <div class="pinfo"><h1>${nameHTML(id,uname)}${ownerTag(id)}</h1>${name!==uname?`<span class="hint" style="margin:0">@${esc(uname)}</span>`:''}<p class="pbio">${esc(p.bio||'')}</p><div class="fwarea" id="fwArea"></div>${admin&&tq?`<p class="hint">Timed out until ${esc(new Date(tq.until).toLocaleString('en-US'))}${tq.reason?' - '+esc(tq.reason):''}</p>`:''}${plink?`<a class="plink" href="${esc(plink)}" target="_blank" rel="noopener noreferrer">Community link</a>`:''}${admin?`<div class="actions" style="margin-top:12px"><button class="btn sec" id="ubBtn">Badges</button><button class="btn sec" id="ufBtn">Frames</button><button class="btn sec" id="umBtn">Message</button><button class="btn sec" id="utBtn">${tq?'Remove timeout':'Timeout'}</button>${vq&&vq.status==='pending'?'<button class="btn" id="vaBtn">Approve verify</button><button class="btn danger" id="vdBtn">Decline</button>':''}</div>${vq&&vq.status==='pending'?'<p class="hint">This user requested a verify badge.</p>':''}`:''}</div>
+      <div class="pstats"><div><i class="si">${ICON_CODE}</i><b>${list.length}</b><span>Scripts</span></div><div><i class="si">${ICON_EYE}</i><b>${fmt(views)}</b><span>Views</span></div>${fwStats()}<div><i class="si">${ICON_CAL}</i><b>${esc(first)}</b><span>First script</span></div></div></div></section>
     <section class="mysec"><div class="rowh"><h2>Scripts by ${esc(name)} <span class="cnt">${list.length}</span></h2></div><div class="feed">${list.length?list.map(it=>cardHTML({...it,author:name})).join(''):'<div class="empty" style="grid-column:1/-1"><h3>No scripts yet</h3>This user has not published anything.</div>'}</div></section>`;
+    initFollow(id,name);paintFollowCounts(id,name);
     if(admin)$('ubBtn').onclick=async()=>{if(await badgeEditor(id,name))pageUser(id)};
     if(admin)$('ufBtn').onclick=()=>giftEditor(id,name);
     if(admin){
