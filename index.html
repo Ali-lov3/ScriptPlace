@@ -277,6 +277,17 @@ const DB={
     if(REMOTE){try{await rq('/rest/v1/rpc/log_search',{method:'POST',body:{t}})}catch(e){}return}
     const m=LS.get('spl_terms',{});m[t]=(m[t]||0)+1;LS.set('spl_terms',m);
   },
+  async topCreators(){
+    let rows;
+    if(REMOTE)rows=(await rq('/rest/v1/creator_views?select=user_id,total_views&order=total_views.desc&limit=12')).map(r=>({id:r.user_id,views:Number(r.total_views)||0}));
+    else{const m={};LS.get('spl_scripts',[]).forEach(x=>{if(x.user_id)m[x.user_id]=(m[x.user_id]||0)+(x.views||0)});rows=Object.keys(m).map(id=>({id,views:m[id]})).sort((a,b)=>b.views-a.views).slice(0,12)}
+    rows=rows.filter(r=>r.views>0);
+    if(!rows.length)return[];
+    const ids=rows.map(r=>r.id);
+    await Badges.ensure(ids);
+    const pr=await Prof.many(ids);
+    return rows.map(r=>({...r,p:pr[r.id]||{id:r.id}}));
+  },
   async trends(){
     if(REMOTE){const r=await rq('/rest/v1/rpc/popular_searches',{method:'POST',body:{lim:80}});return r.map(x=>({term:x.term,n:Number(x.n)||0}))}
     const m=LS.get('spl_terms',{});return Object.keys(m).map(k=>({term:k,n:m[k]})).sort((a,b)=>b.n-a.n).slice(0,80);
@@ -1182,7 +1193,14 @@ function pageHome(){
 }
 const CLOUD_COLORS=['#ff3d8b','#3ecf8e','#3b9cff','#f5b84b','#a855f7','#22d3ee','#f0506a','#84cc16'];
 async function pageTrends(){
-  $('app').innerHTML=`<div class="rowh big"><h1>Popular searches</h1></div><p class="intro">What people look for on ScriptPlace right now. Bigger words are searched more often. Publish a script for one of them.</p><div id="tBox"><div class="sk" style="height:260px"></div></div>`;
+  $('app').innerHTML=`<div class="rowh big"><h1>Popular searches</h1></div><p class="intro">What people look for on ScriptPlace right now. Bigger words are searched more often. Publish a script for one of them.</p><div id="tBox"><div class="sk" style="height:260px"></div></div><div class="rowh" style="margin-top:32px"><h2>Top creators</h2></div><div id="tCre"><div class="sk" style="height:120px"></div></div>`;
+  DB.topCreators().then(list=>{
+    const b=$('tCre');if(!b)return;
+    if(!list.length){b.innerHTML='<div class="card empty"><h3>No creators yet</h3>Creators show up here once their scripts get views.</div>';return}
+    b.innerHTML=`<div class="crl">${list.map((c,i)=>{
+      const nm=dn(c.id,c.p.username||NAMES[c.id]||'User');
+      return `<a class="crc" href="#user/${encodeURIComponent(c.id)}">${avatarHTML({...c.p,id:c.id},nm,48)}<span class="crt"><b>${nameHTML(c.id,nm)}</b><span class="crb">${badgeHTML(c.id)}</span><small>${ICON_EYE}${fmt(c.views)} views</small></span></a>`}).join('')}</div>`;
+  }).catch(e=>{const b=$('tCre');if(b)b.innerHTML=`<div class="card"><p class="err">Could not load creators: ${esc(e.message)}</p></div>`});
   try{
     const rows=await DB.trends(),box=$('tBox');if(!box)return;
     if(!rows.length){box.innerHTML='<div class="card empty"><h3>No searches yet</h3>Search terms show up here as soon as people use the search on the home page.<div class="actions" style="justify-content:center"><a class="btn" href="#home">Go to search</a></div></div>';return}
